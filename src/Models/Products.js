@@ -1,50 +1,42 @@
 const mongoose = require('mongoose');
 
-const ProductsSchema = new mongoose.Schema({
-    id: {
-        type: Number,
-        required: true,
-    },
-    name_product: {
-        type: String,
-        required: true,
-    },
-    image: {
-        type: String,
-        required: true,
-    },
+const productSchema = new mongoose.Schema({
+    name: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true
+    },    
     description: {
-        type: String,
+      short: { type: String, maxlength: 160 },
+      full: String,
+      specifications: mongoose.Schema.Types.Mixed
     },
-    price: {
-        type: Number,
-        require: true,
+    pricing: {
+      basePrice: { type: Number, required: true },      
+      mercadoLibreId: String
     },
-    category: {        
-            type: String,
-            required: true,
-            enum: [
-                "ilustracion",
-                "pintura",
-                "print",
-                "sticker",
-                "indumentaria"
-            ]        
+    inventory: {
+      stock: { type: Number, required: true },
+      variants: [{
+        size: String,
+        color: String,
+        stock: Number
+      }]
     },
-    date:{
-        type: Date,
-        default: Date.now,
+    media: {
+      images: [String],
+      videos: [String]
     },
-    available:{
-        type: Boolean,
-        default: true,
+    salesData: {
+      totalSold: { type: Number, default: 0 },
+      lastSold: Date
     }
-},
-    {
-        timestamps: true,
-    }
-);
+  }, {
+    timestamps: true,
+    toJSON: { virtuals: true }
+  });
 
-const Products = mongoose.model('Products', ProductsSchema);
+const Products = mongoose.model('Products', productSchema);
 
-module.exports = Products;
+module.exports = Products;        

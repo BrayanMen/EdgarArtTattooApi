@@ -25,7 +25,7 @@ const UserSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['admin', 'artist', 'client'],
+        enum: ['admin', 'client'],
         default: 'client'
     },
     authProvider: {
@@ -46,7 +46,7 @@ const UserSchema = new mongoose.Schema({
 );
 
 UserSchema.pre('validate', function (next) {
-    if (this.authProvider === 'local' && !['admin', 'artist'].includes(this.role)) {
+    if (this.authProvider === 'local' && !['admin'].includes(this.role)) {
         this.invalidate('role', 'Rol inválido para autenticación local');
     }
     if (this.authProvider !== 'local' && this.role !== 'client') {
