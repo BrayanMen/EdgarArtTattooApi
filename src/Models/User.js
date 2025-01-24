@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
 const UserSchema = new mongoose.Schema({
     fullName: {
@@ -54,6 +56,25 @@ UserSchema.pre('validate', function (next) {
     }
     next();
 });
+
+UserSchema.pre('save', async function(next) {
+    if (this.isModified('password') && this.authProvider === 'local') {
+      this.password = await bcrypt.hash(this.password, 12);
+    }
+    next();
+  });
+  
+  UserSchema.methods.comparePassword = async function(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+  };
+  
+  UserSchema.methods.generateAuthToken = function() {
+    return jwt.sign(
+      { id: this._id, role: this.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES }
+    );
+  };
 
 const User = mongoose.model('User', UserSchema);
 
