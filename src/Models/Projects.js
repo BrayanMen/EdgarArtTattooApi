@@ -33,7 +33,6 @@ const projectsSchema = new mongoose.Schema({
     description: {
         client: {
             type: String,
-            required: true,
             trim: true
         },
         techniques: {
@@ -61,7 +60,7 @@ const projectsSchema = new mongoose.Schema({
     toJSON: { virtuals: true }
 });
 
-projectSchema.virtual('description.totalHours').get(function () {
+projectsSchema.virtual('description.totalHours').get(function () {
     return this.description.duration.sessions * this.description.duration.hoursPerSession;
 });
 

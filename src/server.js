@@ -1,62 +1,36 @@
-require('dotenv').config()
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors")
-const cookieParser = require("cookie-parser");
-const morgan = require("morgan");
-const path = require("path");
-const multer = require('multer')
-const routes = require("./Routes/index.js");
-const connectDB = require("./Config/db");
-const errorHandler = require('./Middleware/errorMiddlewarw');
+import express from 'express';
+import  {securityMiddleware}  from './Middleware/securityMiddleware';
+import { logger } from './Utils/logger';
+import {  validateEnv } from './Config/env';
+import router from './Routes/index';
+import {errorHandler} from './Middleware/errorMiddlewarw';
+
+validateEnv();
 
 const server = express();
 
-server.use(cors());
-server.use(express.json());
-server.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
-server.use(bodyParser.json({ limit: '50mb' }));
-server.use(cookieParser());
-server.use(morgan('dev'));
+// Middlewares
+server.use(express.json({ limit: '10kb' }));
+server.use(securityMiddleware);
+server.use(logger);
+server.disable('x-powered-by');
 server.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:3000'); // update to match the domain you will make the request from
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+  res.cookie('token', 'value', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+  });
   next();
 });
 
-server.use('/', routes);
+// Rutas
+server.use('/', router);
 
-//Almacenador de Imagenes
-const storage = multer.diskStorage({
-  destination: "./Upload/Images",
-  filename: (req, file, cb) => {
-    return cb(null, `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`)
-  }
+
+// Manejador de Errores 
+server.use((req, res, next) => {
+  next(new AppError(`No se pudo encontrar ${req.originalUrl} en este servidor.`, 404));
 });
-
-const upload = multer({ storage: storage })
-
-//Crear ruta de upload
-server.use("/images", express.static("Upload/Images"))
-
-server.post("/upload", upload.single('product'), (req, res) => {
-  res.json({
-    sucess: 1,
-    image_url: `http://localhost:${process.env.PORT}/images/${req.file.filename}`
-  })
-})
-
-
-//Conecta la DB
-
-connectDB().then(() => {
-  console.log('Base de Datos Establecida');
-}).catch((err) => {
-  console.error('Error al iniciar DB', err.message);
-})
-
 server.use(errorHandler);
 
 module.exports = server;

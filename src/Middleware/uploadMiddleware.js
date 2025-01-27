@@ -11,34 +11,48 @@ cloudinary.config({
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image')) cb(null, true);
-    else cb(new AppError('Solo se permiten imágenes', 400), false);
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/mkv', 'video/avi'];
+    if (allowedTypes.includes(file.mimetype)) cb(null, true);
+    else cb(new AppError('Solo se permiten imágenes y videos', 400), false);
   }
 });
 
-export const processImage = (fieldName) => catchAsync(async (req, res, next) => {
+export const processMedia = (fieldName) => catchAsync(async (req, res, next) => {
   if (!req.file) return next();
-  
-  const processedImage = await sharp(req.file.buffer)
-    .resize(1920, 1080, { fit: 'inside' })
-    .webp({ quality: 80 })
-    .toBuffer();
 
-  const result = await new Promise((resolve, reject) => {
-    cloudinary.v2.uploader
-      .upload_stream({ resource_type: 'image' }, (error, result) => {
-        if (error) reject(error);
-        else resolve(result);
-      })
-      .end(processedImage);
-  });
+  let uploadedFile;
+
+  if (req.file.mimetype.startsWith('image')) {
+    const processedImage = await sharp(req.file.buffer)
+      .resize(1920, 1080, { fit: 'inside' })
+      .webp({ quality: 80 })
+      .toBuffer();
+
+    uploadedFile = await new Promise((resolve, reject) => {
+      cloudinary.v2.uploader
+        .upload_stream({ resource_type: 'image' }, (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        })
+        .end(processedImage);
+    });
+  } else if (req.file.mimetype.startsWith('video')) {
+    uploadedFile = await new Promise((resolve, reject) => {
+      cloudinary.v2.uploader
+        .upload_stream({ resource_type: 'video' }, (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        })
+        .end(req.file.buffer);
+    });
+  }
 
   req.body[fieldName] = {
-    public_id: result.public_id,
-    url: result.secure_url
+    public_id: uploadedFile.public_id,
+    url: uploadedFile.secure_url
   };
-  
+
   next();
 });
 
-export const uploadImage = (fieldName) => upload.single(fieldName);
+export const uploadMedia = (fieldName) => upload.single(fieldName);
