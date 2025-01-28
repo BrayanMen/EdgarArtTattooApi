@@ -26,11 +26,11 @@ const ReviewsSchema = new mongoose.Schema({
       },
       targetModel: {
         type: String,
-        enum: ['Projects', 'Seminar', 'Products', 'GalleryArt' ],
+        enum: ['Projects', 'Products', 'GalleryArt' ],
         required: true
       }
     }, { timestamps: true });
 
-const Reviews = mongoose.model('GalleryArt', ReviewsSchema);
+const Reviews = mongoose.model('Reviews', ReviewsSchema);
 
 module.exports = Reviews;

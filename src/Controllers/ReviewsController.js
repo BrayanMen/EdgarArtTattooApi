@@ -16,7 +16,6 @@ const checkExistingReview = async (userId, targetId, targetModel) => {
 };
 
 export const createReview = catchAsync(async (req, res, next) => {
-  // Verificar si ya existe una review
   await checkExistingReview(req.user.id, req.body.target, req.body.targetModel);
 
   const newReview = await Review.create({
