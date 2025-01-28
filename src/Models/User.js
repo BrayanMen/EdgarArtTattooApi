@@ -16,8 +16,9 @@ const UserSchema = new mongoose.Schema({
     password: {
         type: String,
         validate: {
-            validator: function (v) {
-                return this.authProvider === 'local' ? v && v.length >= 6 : true;
+            validator: function (password) {
+                return this.authProvider === 'local' ? 
+                password && password.length >= 6 : true;
             },
             message: 'La contraseña debe tener al menos 6 caracteres'
         }

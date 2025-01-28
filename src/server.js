@@ -11,6 +11,7 @@ const server = express();
 
 // Middlewares
 server.use(express.json({ limit: '10kb' }));
+server.use(express.urlencoded({ extended: true, limit: '10kb' }));
 server.use(securityMiddleware);
 server.use(logger);
 server.disable('x-powered-by');

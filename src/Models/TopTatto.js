@@ -31,9 +31,9 @@ topTattooSchema.pre("save", async function (next) {
 topTattooSchema.post('findOneAndDelete', async function (doc, next) {
     if (doc) {
         const image = await mongoose.models.TopTattoo.find({}).sort({ order: 1 });
-        for (i = 0; i < image.length; i++) {
-            images[i].order = i + 1;
-            await images[i].save();
+        for (let i = 0; i < image.length; i++) {
+            image[i].order = i + 1;
+            await image[i].save();
         }
     }    
 });
