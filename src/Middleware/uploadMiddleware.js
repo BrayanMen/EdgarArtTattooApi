@@ -12,7 +12,7 @@ cloudinary.config({
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/jpg'];
 const VIDEO_TYPES = ['video/mp4', 'video/mkv', 'video/avi'];
-const TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
+const TYPES = [...IMAGE_TYPES, ...VIDEO_TYPES];
 
 
 const upload = multer({

@@ -1,12 +1,8 @@
 const mongoose = require('mongoose');
+const { stringRequired, commonSchemaOptions, booleanDefault } = require('../Utils/mongooseUtils');
 
 const projectsSchema = new mongoose.Schema({
-    title: {
-        type: String,
-        required: true,
-        trim: true,
-        unique: true
-    },    
+    title: stringRequired('El título', 100),   
     mainImage: {
         type: mongoose.Schema.Types.Mixed,
         required: true
@@ -31,10 +27,7 @@ const projectsSchema = new mongoose.Schema({
         },
     }],
     description: {
-        client: {
-            type: String,
-            trim: true
-        },
+        client: stringRequired('Cliente', 50),
         techniques: {
             type: [String],
             validate: {
@@ -48,17 +41,11 @@ const projectsSchema = new mongoose.Schema({
             sessions: { type: Number, min: 1 },
             hoursPerSession: { type: Number, min: 1 }
         },
-        story: {
-            type: String,
-            maxlength: [500, 'Máximo 500 caracteres']
-        }
+        story: stringRequired('Historia', 500)
     },
-    featured: { type: Boolean, default: false },
-    active: { type: Boolean, default: true }
-}, {
-    timestamps: true,
-    toJSON: { virtuals: true }
-});
+    featured: booleanDefault(),
+    active: booleanDefault(),
+},commonSchemaOptions);
 
 projectsSchema.virtual('description.totalHours').get(function () {
     return this.description.duration.sessions * this.description.duration.hoursPerSession;

@@ -1,12 +1,9 @@
 const mongoose = require('mongoose');
 import bg from '../assets/images/bg.jpg';
+import { stringRequired } from '../Utils/mongooseUtils';
 
 const galleryArtSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-    maxlength: [50, 'El título no puede exceder los 50 caracteres']
-  },
+  title: stringRequired('El título', 100),
   images: {
     main: {
       type: String, 

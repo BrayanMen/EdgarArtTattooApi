@@ -1,12 +1,8 @@
 const mongoose = require('mongoose');
+const { stringRequired, commonSchemaOptions } = require('../Utils/mongooseUtils');
 
 const productSchema = new mongoose.Schema({
-    name: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true
-    },    
+    name: stringRequired('El nombre', 100),    
     description: {
       short: { type: String, maxlength: 160 },
       full: String,
@@ -32,10 +28,7 @@ const productSchema = new mongoose.Schema({
       totalSold: { type: Number, default: 0 },
       lastSold: Date
     }
-  }, {
-    timestamps: true,
-    toJSON: { virtuals: true }
-  });
+  }, commonSchemaOptions);
 
 const Products = mongoose.model('Products', productSchema);
 

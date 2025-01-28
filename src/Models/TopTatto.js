@@ -1,10 +1,8 @@
 const mongoose = require('mongoose');
+const { commonSchemaOptions, booleanDefault, stringRequired } = require('../Utils/mongooseUtils');
 
 const topTattooSchema = new mongoose.Schema({
-    image: {
-        type: String,
-        required: [true, 'La imagen es requerida'],
-    },
+    image: stringRequired('La imagen'),
     order: {
         type: Number,
         unique: true,
@@ -12,11 +10,8 @@ const topTattooSchema = new mongoose.Schema({
         max: [6, 'El orden máximo es 6'],
         required: [true, 'El orden es requerido'],
     },
-    active: {
-        type: Boolean,
-        default: true,
-    },
-});
+    active: booleanDefault()
+}, commonSchemaOptions);
 
 topTattooSchema.pre("save", async function (next) {
     if (this.isNew || this.isModified("active")) {

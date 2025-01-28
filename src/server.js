@@ -3,7 +3,7 @@ import  {securityMiddleware}  from './Middleware/securityMiddleware';
 import { logger } from './Utils/logger';
 import {  validateEnv } from './Config/env';
 import router from './Routes/index';
-import {errorHandler} from './Middleware/errorMiddlewarw';
+import {errorHandler} from './Middleware/errorMiddleware';
 
 validateEnv();
 
