@@ -1,7 +1,7 @@
-import jwt from 'jsonwebtoken';
-import User from '../Models/User';
-import { catchAsync } from '../Utils/catchAsync';
-import AppError from '../Utils/AppError';
+const jwt = require('jsonwebtoken');
+const User = require('../Models/User');
+const {catchAsync} = require('../Utils/catchAsync');
+const AppError = require('../Utils/AppError');
 
 export const protect = catchAsync(async (req, res, next) => {
   let token;

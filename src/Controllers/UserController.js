@@ -1,8 +1,10 @@
-import { catchAsync } from '../Utils/catchAsync';
-import User from '../Models/User';
-import  AppError  from '../Utils/AppError';
-import jwt from 'jsonwebtoken';
-import { uploadMedia, processMedia, deleteFromCloudinary } from '../Middleware/uploadMiddleware';
+const {catchAsync} = require('../Utils/catchAsync');
+const User = require("../Models/User");
+const AppError = require("../Utils/AppError");
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const { uploadMedia, processMedia, deleteFromCloudinary} = require('../Middleware/uploadMiddleware');
+const { sendVerifyEmail, sendPasswordReset } = require('../Config/nodemailer');
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -22,7 +24,7 @@ const createSendToken = (user, statusCode, res) => {
   });
 };
 
-export const signup = catchAsync(async (req, res, next) => {
+const signup = catchAsync(async (req, res, next) => {
   const { email } = req.body;
   
   const userExists = await User.findOne({ email });
@@ -38,7 +40,7 @@ export const signup = catchAsync(async (req, res, next) => {
   createSendToken(newUser, 201, res);
 });
 
-export const login = catchAsync(async (req, res, next) => {
+const login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -54,7 +56,7 @@ export const login = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
-export const socialLogin = catchAsync(async (req, res, next) => {
+const socialLogin = catchAsync(async (req, res, next) => {
   const { email, fullName, image, socialId, authProvider } = req.body;
 
   let user = await User.findOne({ email });
@@ -75,7 +77,43 @@ export const socialLogin = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
-export const updateProfile = catchAsync(async (req, res, next) => {
+const sendVerificationMail = catchAsync(async (user)=>{
+  const token = crypto.randomBytes(32).toString('hex');
+  user.emailVerificationToken = crypto
+  .createHash('sha256')
+  .update(token)
+  .digest('hex');
+
+  user.emailVerified = false;
+  await user.save({ validateBeforeSave: false });
+  const urlVerify = `${process.env.CLIENT_URL}/verifyEmail/${token}`;
+  await sendVerifyEmail(user.email, urlVerify);
+});
+
+const verificationMail = catchAsync(async(req, res, next)=>{
+  const token = crypto
+  .createHash('sha256')
+  .update(req.params.token)
+  .digest('hex');
+  const user = await User.findOne({
+    emailVerificationToken: token,
+  })
+
+  if(!user){
+    return next(new AppError("Token Invalido o Vencido", 400));
+  }
+
+  user.emailVerified = true;
+  user.emailVerificationToken = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({
+    status: 'success',
+    message: 'Email verificado correctamente'
+  })
+});
+
+const updateProfile = catchAsync(async (req, res, next) => {
   const allowedUpdates = ['fullName', 'email', 'socialLinks'];
   const updates = Object.keys(req.body);
   const isValidOperation = updates.every(update => allowedUpdates.includes(update));
@@ -95,7 +133,7 @@ export const updateProfile = catchAsync(async (req, res, next) => {
   });
 });
 
-export const updateProfileImage = catchAsync(async (req, res, next) => {
+const updateProfileImage = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id);
 
   if (user.image?.public_id) {
@@ -111,7 +149,62 @@ export const updateProfileImage = catchAsync(async (req, res, next) => {
   });
 });
 
-export const updatePassword = catchAsync(async (req, res, next) => {
+const forgotPassword = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({email: req.body.email});
+  if(!user){
+    return next(new AppError("No se encuentra el Usuario", 404))
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const passwordReset = crypto
+  .createHash('sha256')
+  .update(token)
+  .digest('hex');
+
+  const expireDate = Date.now() + 900000; // 15 minutos
+
+  user.passwordResetToken = passwordReset;
+  user.passwordResetExpires = expireDate;
+  try{
+    await sendPasswordReset(user.email, token);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Token enviado al correo'
+    })
+  } catch (error){
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+
+    await user.save({ validateBeforeSave: false });
+
+    return next(new AppError("Error al enviar el correo, prueba de nuevo", 500));
+  }
+});
+
+const resetPassword = catchAsync(async (req, res, next) => {
+  const token = crypto
+  .createHash('sha256')
+  .update(req.params.token)
+  .digest('hex');
+
+  const user = User.findOne({
+    passwordResetToken: token,
+    passwordResetExpires: {$gt: Date.now()}
+  });
+
+  if(!user){
+    return next(new AppError('Token Invalido o Expirado', 400))
+  }
+
+  user.password = req.body.newPassword;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+  createSendToken(user, 200, res)
+});
+
+const updatePassword = catchAsync(async (req, res, next) => {
   const { currentPassword, newPassword } = req.body;
 
   const user = await User.findById(req.user.id).select('+password');
@@ -126,7 +219,7 @@ export const updatePassword = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
-export const getProfile = catchAsync(async (req, res) => {
+const getProfile = catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id);
 
   res.status(200).json({
@@ -136,7 +229,7 @@ export const getProfile = catchAsync(async (req, res) => {
 });
 
 // Admin 
-export const getAllUsers = catchAsync(async (req, res) => {
+const getAllUsers = catchAsync(async (req, res) => {
   const users = await User.find();
 
   res.status(200).json({
@@ -146,7 +239,7 @@ export const getAllUsers = catchAsync(async (req, res) => {
   });
 });
 
-export const getUser = catchAsync(async (req, res, next) => {
+const getUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.id);
 
   if (!user) {
@@ -159,7 +252,7 @@ export const getUser = catchAsync(async (req, res, next) => {
   });
 });
 
-export const updateUser = catchAsync(async (req, res, next) => {
+const updateUser = catchAsync(async (req, res, next) => {
   const allowedUpdates = ['fullName', 'email', 'role', 'active'];
   const updates = Object.keys(req.body);
   const isValidOperation = updates.every(update => allowedUpdates.includes(update));
@@ -183,7 +276,7 @@ export const updateUser = catchAsync(async (req, res, next) => {
   });
 });
 
-export const deleteUser = catchAsync(async (req, res, next) => {
+const deleteUser = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.params.id);
 
   if (!user) {
@@ -201,3 +294,21 @@ export const deleteUser = catchAsync(async (req, res, next) => {
     data: null
   });
 });
+
+module.exports = {
+  signup,
+  login,
+  socialLogin,
+  sendVerificationMail,
+  verificationMail,
+  updateProfile,
+  updateProfileImage,
+  forgotPassword,
+  resetPassword,
+  updatePassword,
+  getProfile,
+  getAllUsers,
+  getUser,
+  updateUser,
+  deleteUser
+};

@@ -1,5 +1,6 @@
-import axios from 'axios';
-import Product from '../models/Product';
+const axios = require('axios');
+const catchAsync = require('../Utils/catchAsync');
+const Product = require('../Models/Products');
 
 const syncWithMercadoLibre = catchAsync(async (productId) => {
   const product = await Product.findById(productId);

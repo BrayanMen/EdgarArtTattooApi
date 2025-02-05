@@ -1,17 +1,17 @@
-import express from 'express';
-import  {securityMiddleware}  from './Middleware/securityMiddleware';
-import { logger } from './Utils/logger';
-import {  validateEnv } from './Config/env';
-import router from './Routes/index';
-import {errorHandler} from './Middleware/errorMiddleware';
+const express = require('express');
+const {securityMiddleware} = require('./Middleware/securityMiddleware');
+const {logger} = require('./Utils/logger');
+const { validateEnv } = require('./Config/env');
+const router = require('./Routes/index');
+const {errorHandler} = require('./Middleware/errorMiddleware');
 
 validateEnv();
 
 const server = express();
 
 // Middlewares
-server.use(express.json({ limit: '10kb' }));
-server.use(express.urlencoded({ extended: true, limit: '10kb' }));
+server.use(express.json({ limit: '50kb' }));
+server.use(express.urlencoded({ extended: true, limit: '50kb' }));
 server.use(securityMiddleware);
 server.use(logger);
 server.disable('x-powered-by');

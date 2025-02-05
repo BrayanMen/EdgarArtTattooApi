@@ -1,7 +1,6 @@
-import { catchAsync } from '../Utils/catchAsync';
-import Review from '../Models/Reviews';
-import { AppError } from '../Utils/AppError';
-
+const { AppError } = require('../Utils/AppError');
+const Review = require('../Models/Reviews');
+const {catchAsync} = require('../Utils/catchAsync');
 
 const checkExistingReview = async (userId, targetId, targetModel) => {
   const existingReview = await Review.findOne({

@@ -13,16 +13,23 @@ const UserSchema = new mongoose.Schema({
         unique: true,
         trim: true,
     },
+    emailVerified: {
+        type: Boolean,
+        default: false
+    },
+    emailVerificationToken: String,
     password: {
         type: String,
         validate: {
             validator: function (password) {
-                return this.authProvider === 'local' ? 
-                password && password.length >= 6 : true;
+                return this.authProvider === 'local' ?
+                    password && password.length >= 6 : true;
             },
             message: 'La contraseña debe tener al menos 6 caracteres'
         }
     },
+    passwordResetToken: String,
+    passwordResetExpires: Date,
     image: {
         type: String,
     },
@@ -58,24 +65,24 @@ UserSchema.pre('validate', function (next) {
     next();
 });
 
-UserSchema.pre('save', async function(next) {
+UserSchema.pre('save', async function (next) {
     if (this.isModified('password') && this.authProvider === 'local') {
-      this.password = await bcrypt.hash(this.password, 12);
+        this.password = await bcrypt.hash(this.password, 12);
     }
     next();
-  });
-  
-  UserSchema.methods.comparePassword = async function(candidatePassword) {
+});
+
+UserSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
-  };
-  
-  UserSchema.methods.generateAuthToken = function() {
+};
+
+UserSchema.methods.generateAuthToken = function () {
     return jwt.sign(
-      { id: this._id, role: this.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES }
+        { id: this._id, role: this.role },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES }
     );
-  };
+};
 
 const User = mongoose.model('User', UserSchema);
 

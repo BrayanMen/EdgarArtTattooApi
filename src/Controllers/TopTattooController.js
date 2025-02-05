@@ -1,8 +1,7 @@
-const mongoose = require("mongoose");
-const asyncHandler = require("express-async-handler")
 const TopTatto = require("../Models/TopTatto");
+const {catchAsync} = require('../Utils/catchAsync');
 
-const addImageAtPosition = asyncHandler(async (imageUrl, order) => {
+const addImageAtPosition = catchAsync(async (imageUrl, order) => {
     try {      
       const activeImagesCount = await TopTatto.countDocuments({ active: true });
       if (activeImagesCount >= 6) {
@@ -34,7 +33,7 @@ const addImageAtPosition = asyncHandler(async (imageUrl, order) => {
     }
   });
 
-  const reOrder = asyncHandler(async (req, res, next) => {
+  const reOrder = catchAsync(async (req, res, next) => {
         try {
           const { reorderImag } = req.body; 
 
