@@ -1,11 +1,18 @@
 const { Router } = require('express');
-const { addProducts, removeProducts, getAllProducts } = require('../Controllers/ProductsController');
+const { syncWithMercadoLibre } = require('../Controllers/ProductsController');
 const router = Router();
 
-//POST
-router.post("/addproducts", addProducts);
-router.post("/removeproducts", removeProducts);
-//GET
-router.get("/allproducts", getAllProducts)
+router.post('/sync-ml/:productId', async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    const product = await syncWithMercadoLibre(productId);
+    res.status(200).json({
+      status: 'success',
+      data: product
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;
