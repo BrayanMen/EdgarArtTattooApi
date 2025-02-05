@@ -1,7 +1,7 @@
 const server = require('./src/server');
 require('dotenv').config()
 const { env } = require('./src/Config/env');
-const  logger  = require('./src/Utils/logger');
+const  {logger}  = require('./src/Utils/logger');
 const connectDB = require('./src/Config/db');
 
 
