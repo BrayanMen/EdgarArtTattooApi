@@ -1,6 +1,6 @@
-const { AppError } = require('../Utils/AppError');
+const  AppError = require('../Utils/AppError');
 const Review = require('../Models/Reviews');
-const {catchAsync} = require('../Utils/catchAsync');
+const catchAsync = require('../Utils/catchAsync');
 
 const checkExistingReview = async (userId, targetId, targetModel) => {
   const existingReview = await Review.findOne({
@@ -14,7 +14,7 @@ const checkExistingReview = async (userId, targetId, targetModel) => {
   }
 };
 
-export const createReview = catchAsync(async (req, res, next) => {
+ const createReview = catchAsync(async (req, res, next) => {
   await checkExistingReview(req.user.id, req.body.target, req.body.targetModel);
 
   const newReview = await Review.create({
@@ -35,7 +35,7 @@ export const createReview = catchAsync(async (req, res, next) => {
   });
 });
 
-export const getReviews = catchAsync(async (req, res) => {
+ const getReviews = catchAsync(async (req, res) => {
   const filter = {};
 
   if (req.params.targetId) {
@@ -70,7 +70,7 @@ export const getReviews = catchAsync(async (req, res) => {
   });
 });
 
-export const updateReview = catchAsync(async (req, res, next) => {
+ const updateReview = catchAsync(async (req, res, next) => {
   const review = await Review.findOne({
     _id: req.params.id,
     author: req.user.id
@@ -98,7 +98,7 @@ export const updateReview = catchAsync(async (req, res, next) => {
   });
 });
 
-export const deleteReview = catchAsync(async (req, res, next) => {
+ const deleteReview = catchAsync(async (req, res, next) => {
   const review = await Review.findOne({
     _id: req.params.id,
     author: req.user.id
@@ -117,7 +117,7 @@ export const deleteReview = catchAsync(async (req, res, next) => {
 });
 
 // Admin Controllers
-export const getAllReviews = catchAsync(async (req, res) => {
+ const getAllReviews = catchAsync(async (req, res) => {
   const reviews = await Review.find()
     .populate('author', 'fullName email')
     .populate('target')
@@ -130,7 +130,7 @@ export const getAllReviews = catchAsync(async (req, res) => {
   });
 });
 
-export const deleteReviewAdmin = catchAsync(async (req, res, next) => {
+ const deleteReviewAdmin = catchAsync(async (req, res, next) => {
   const review = await Review.findById(req.params.id);
 
   if (!review) {
@@ -146,7 +146,7 @@ export const deleteReviewAdmin = catchAsync(async (req, res, next) => {
 });
 
 // Estadísticas
-export const getReviewStats = catchAsync(async (req, res) => {
+ const getReviewStats = catchAsync(async (req, res) => {
   const stats = await Review.aggregate([
     {
       $group: {
@@ -221,3 +221,13 @@ export const getReviewStats = catchAsync(async (req, res) => {
     data: { stats }
   });
 });
+
+module.exports = {
+  createReview,
+  getReviews,
+  updateReview,
+  deleteReview,
+  getAllReviews,
+  deleteReviewAdmin,
+  getReviewStats
+};

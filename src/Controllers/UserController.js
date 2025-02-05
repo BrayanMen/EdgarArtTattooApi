@@ -1,4 +1,4 @@
-const {catchAsync} = require('../Utils/catchAsync');
+const catchAsync = require('../Utils/catchAsync');
 const User = require("../Models/User");
 const AppError = require("../Utils/AppError");
 const crypto = require('crypto');
@@ -25,17 +25,27 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 const signup = catchAsync(async (req, res, next) => {
-  const { email } = req.body;
-  
+    
   const userExists = await User.findOne({ email });
   if (userExists) {
     return next(new AppError('El email ya está registrado', 400));
   }
 
   const newUser = await User.create({
-    ...req.body,
+    fullName: req.body.fullName,
+    email: req.body.email,
+    password: req.body.password,
+    role: req.body.role || 'client',
     authProvider: 'local'
   });
+
+  const token = crypto.randomBytes(32).toString('hex');
+  newUser.emailVerificationToken = crypto
+  .createHash('sha256')
+  .update(token)
+  .digest('hex');
+  await newUser.save({ validateBeforeSave: false });
+  await sendVerifyEmail(newUser.email, token);
 
   createSendToken(newUser, 201, res);
 });
@@ -68,26 +78,13 @@ const socialLogin = catchAsync(async (req, res, next) => {
       image,
       socialId,
       authProvider,
-      role: 'client'
+      emailVerified: true
     });
   } else if (user.authProvider !== authProvider) {
     return next(new AppError(`Esta cuenta está registrada con ${user.authProvider}`, 400));
   }
 
   createSendToken(user, 200, res);
-});
-
-const sendVerificationMail = catchAsync(async (user)=>{
-  const token = crypto.randomBytes(32).toString('hex');
-  user.emailVerificationToken = crypto
-  .createHash('sha256')
-  .update(token)
-  .digest('hex');
-
-  user.emailVerified = false;
-  await user.save({ validateBeforeSave: false });
-  const urlVerify = `${process.env.CLIENT_URL}/verifyEmail/${token}`;
-  await sendVerifyEmail(user.email, urlVerify);
 });
 
 const verificationMail = catchAsync(async(req, res, next)=>{
@@ -141,6 +138,7 @@ const updateProfileImage = catchAsync(async (req, res, next) => {
   }
 
   user.image = req.body.image;
+
   await user.save();
 
   res.status(200).json({
@@ -205,11 +203,9 @@ const resetPassword = catchAsync(async (req, res, next) => {
 });
 
 const updatePassword = catchAsync(async (req, res, next) => {
-  const { currentPassword, newPassword } = req.body;
-
   const user = await User.findById(req.user.id).select('+password');
 
-  if (!(await user.comparePassword(currentPassword))) {
+  if (!(await user.comparePassword(req.body.currentPassword))) {
     return next(new AppError('Contraseña actual incorrecta', 401));
   }
 
@@ -228,7 +224,6 @@ const getProfile = catchAsync(async (req, res) => {
   });
 });
 
-// Admin 
 const getAllUsers = catchAsync(async (req, res) => {
   const users = await User.find();
 
@@ -299,7 +294,6 @@ module.exports = {
   signup,
   login,
   socialLogin,
-  sendVerificationMail,
   verificationMail,
   updateProfile,
   updateProfileImage,

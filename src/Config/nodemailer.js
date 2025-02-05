@@ -17,10 +17,10 @@ const transporterCreate = ()=>{
 
 const sendPasswordReset = async(email, token)=>{
     const transporter = transporterCreate();
-    const url = `${env.CLIENT_URL}/resetPassword/${token}`;
+    const url = `${env.CLIENT_URLS}/resetPassword/${token}`;
 
     const emailOption = {
-        from: env.EMAIL_USERNAME,
+        from: env.EMAIL_USER,
         to: email,
         subject: 'Restablecimiento de Contraseña',
         html: passwordResetHTML(url, env.COMPANY_NAME, env.SUPPORT_EMAIL)
@@ -33,7 +33,7 @@ const sendVerifyEmail = async (email, token) => {
     const url = `${env.CLIENT_URL}/verifyEmail/${token}`;
 
     const emailOption = {
-        from: env.EMAIL_USERNAME,
+        from: env.EMAIL_USER,
         to: email,
         subject: 'Verificación de Correo Electrónico',
         html: emailVerificationHTML(url, env.COMPANY_NAME, env.SUPPORT_EMAIL)
@@ -43,7 +43,7 @@ const sendVerifyEmail = async (email, token) => {
 
 const testEmail = async () => {
     try {
-        await sendPasswordReset('test@email.com', 'test-token');
+        await sendPasswordReset('brayanjmr880@gmail.com', 'test-token');
         console.log('Email de prueba enviado correctamente');
     } catch (error) {
         console.error('Error al enviar email:', error);
@@ -52,5 +52,6 @@ const testEmail = async () => {
 
 module.exports = {
     sendPasswordReset,
-    sendVerifyEmail
+    sendVerifyEmail,
+    testEmail
 }

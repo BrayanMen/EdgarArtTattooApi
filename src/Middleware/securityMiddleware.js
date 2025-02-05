@@ -1,10 +1,11 @@
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import mongoSanitize from 'express-mongo-sanitize';
-import hpp from 'hpp';
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
+const { env } = require('../Config/env');
 
-export const securityMiddleware = [
+const securityMiddleware = [
   helmet({
     contentSecurityPolicy: {
       directives: {
@@ -28,10 +29,12 @@ export const securityMiddleware = [
   }),
   mongoSanitize(),
   hpp(),
-  cors({
-    origin: process.env.CLIENT_URLS.split(','),
+  cors({    
+    origin: env.CLIENT_URLS.split(','),
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   }),
 ];
+
+module.exports = securityMiddleware;

@@ -1,4 +1,5 @@
 const { cleanEnv, str, num, url } = require('envalid');
+require('dotenv').config();
 
 const env = cleanEnv(process.env, {
   NODE_ENV: str({ choices: ['development', 'test', 'production'] }),

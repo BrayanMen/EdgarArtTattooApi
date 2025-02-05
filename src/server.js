@@ -1,9 +1,10 @@
 const express = require('express');
-const {securityMiddleware} = require('./Middleware/securityMiddleware');
-const {logger} = require('./Utils/logger');
+const securityMiddleware = require('./Middleware/securityMiddleware');
+const logger = require('./Utils/logger');
 const { validateEnv } = require('./Config/env');
 const router = require('./Routes/index');
-const {errorHandler} = require('./Middleware/errorMiddleware');
+const errorHandler = require('./Middleware/errorMiddleware');
+const morgan = require('morgan');
 
 validateEnv();
 
@@ -13,7 +14,7 @@ const server = express();
 server.use(express.json({ limit: '50kb' }));
 server.use(express.urlencoded({ extended: true, limit: '50kb' }));
 server.use(securityMiddleware);
-server.use(logger);
+server.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 server.disable('x-powered-by');
 server.use((req, res, next) => {
   res.cookie('token', 'value', {
@@ -24,7 +25,6 @@ server.use((req, res, next) => {
   next();
 });
 
-// Rutas
 server.use('/', router);
 
 

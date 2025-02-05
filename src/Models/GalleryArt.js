@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-import bg from '../assets/images/bg.jpg';
-import { stringRequired } from '../Utils/mongooseUtils';
+const { stringRequired } = require('../Utils/mongooseUtils');
+const bg = require('../assets/images/bg.jpg');
 
 const galleryArtSchema = new mongoose.Schema({
   title: stringRequired('El título', 100),

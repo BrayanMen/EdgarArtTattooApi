@@ -1,24 +1,30 @@
-import {
-    createReview,
-    deleteReview,
-    deleteReviewAdmin,
-    getReviews,
-    getReviewStats,
-    updateReview
-} from "../Controllers/ReviewsController";
-import { protect, restrictTo } from "../Middleware/AuthMiddleware";
+const { Router } = require('express');
+const router = Router();
+const {
+  createReview,
+  getReviews,
+  updateReview,
+  deleteReview,
+  getAllReviews,
+  deleteReviewAdmin,
+  getReviewStats
+} = require('../Controllers/ReviewsController');
+const { protect, restrictTo } = require('../Middleware/AuthMiddleware');
+
+router.get('/', getReviews);
+router.get('/target/:targetId', getReviews);
 
 router.use(protect);
 
-router.route('/')
-    .post(createReview)
-    .get(getReviews);
-
+router.post('/', createReview);
 router.route('/:id')
-    .patch(updateReview)
-    .delete(deleteReview);
+  .patch(updateReview)
+  .delete(deleteReview);
 
 router.use(restrictTo('admin'));
 
-router.get('/stats', getReviewStats);
-router.delete('/:id/admin', deleteReviewAdmin);
+router.get('/admin/all', getAllReviews);
+router.get('/admin/stats', getReviewStats);
+router.delete('/admin/:id', deleteReviewAdmin);
+
+module.exports = router;

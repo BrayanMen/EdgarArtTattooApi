@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
 const User = require('../Models/User');
-const {catchAsync} = require('../Utils/catchAsync');
+const catchAsync = require('../Utils/catchAsync');
 const AppError = require('../Utils/AppError');
 
-export const protect = catchAsync(async (req, res, next) => {
+const protect = catchAsync(async (req, res, next) => {
   let token;
   if (req.headers.authorization?.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
@@ -20,9 +20,14 @@ export const protect = catchAsync(async (req, res, next) => {
   next();
 });
 
-export const restrictTo = (...roles) => catchAsync((req, res, next) => {
+const restrictTo = (...roles) => catchAsync((req, res, next) => {
   if (!roles.includes(req.user.role)) {
     throw new AppError('No tienes permiso para esta acción', 403);
   }
   next();
 });
+
+module.exports = {
+  protect,
+  restrictTo
+};

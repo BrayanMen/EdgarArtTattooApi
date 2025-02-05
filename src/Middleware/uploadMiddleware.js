@@ -1,7 +1,9 @@
-import multer from 'multer';
-import cloudinary from 'cloudinary';
-import sharp from 'sharp';
-import { AppError } from '../Utils/AppError';
+const multer = require('multer');
+const cloudinary = require('cloudinary');
+const sharp = require('sharp');
+const catchAsync = require('../Utils/catchAsync');
+const AppError = require('../Utils/AppError');
+
 
 // Configuración de Cloudinary
 cloudinary.config({
@@ -31,9 +33,9 @@ const upload = multer({
 const processImage = async (buffer) => {
   try {
     return await sharp(buffer)
-      .resize(1920, 1080, { 
+      .resize(1920, 1080, {
         fit: 'inside',
-        withoutEnlargement: true 
+        withoutEnlargement: true
       })
       .webp({ quality: 80 })
       .toBuffer();
@@ -59,7 +61,7 @@ const uploadToCloudinary = (buffer, resourceType) => {
   });
 };
 
-export const processMedia = (fieldName) => catchAsync(async (req, res, next) => {
+const processMedia = (fieldName) => catchAsync(async (req, res, next) => {
   if (!req.file) {
     return next(new AppError('No se ha proporcionado ningún archivo', 400));
   }
@@ -92,7 +94,7 @@ export const processMedia = (fieldName) => catchAsync(async (req, res, next) => 
   }
 });
 
-export const deleteFromCloudinary = async (public_id, resource_type = 'image') => {
+const deleteFromCloudinary = async (public_id, resource_type = 'image') => {
   try {
     await cloudinary.v2.uploader.destroy(public_id, { resource_type });
     return true;
@@ -101,4 +103,6 @@ export const deleteFromCloudinary = async (public_id, resource_type = 'image') =
   }
 };
 
-export const uploadMedia = (fieldName) => upload.single(fieldName);
+const uploadMedia = (fieldName) => upload.single(fieldName);
+
+module.exports = { processMedia, uploadMedia, deleteFromCloudinary };
