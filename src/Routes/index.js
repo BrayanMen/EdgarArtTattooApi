@@ -9,7 +9,6 @@ const { runEmailTest } = require('../Utils/testEmail');
 //     return res.status(200).send('Servidor funcionando...')
 // });
 
-// Puedes usar esto en un endpoint de prueba (solo en desarrollo)
 if (process.env.NODE_ENV === 'development') {
   router.post('/test-email', async (req, res) => {
     try {
