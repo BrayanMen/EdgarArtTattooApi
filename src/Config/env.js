@@ -16,7 +16,7 @@ const env = cleanEnv(process.env, {
   EMAIL_PASS:str(),
   COMPANY_NAME:str(),
   SUPPORT_EMAIL:str(),
-  CLIENT_URLS: str(),
+  CLIENT_URL: str(),
   MERCADOLIBRE_API_KEY: str()
 });
 

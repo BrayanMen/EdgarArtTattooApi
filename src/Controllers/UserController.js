@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const { uploadMedia, processMedia, deleteFromCloudinary} = require('../Middleware/uploadMiddleware');
 const { sendVerifyEmail, sendPasswordReset } = require('../Config/nodemailer');
 
+const TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
+
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN
@@ -25,7 +27,7 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 const signup = catchAsync(async (req, res, next) => {
-    
+  const { email } = req.body;
   const userExists = await User.findOne({ email });
   if (userExists) {
     return next(new AppError('El email ya está registrado', 400));
@@ -148,7 +150,8 @@ const updateProfileImage = catchAsync(async (req, res, next) => {
 });
 
 const forgotPassword = catchAsync(async (req, res, next) => {
-  const user = await User.findOne({email: req.body.email});
+  const { email } = req.body;
+  const user = await User.findOne({email});
   if(!user){
     return next(new AppError("No se encuentra el Usuario", 404))
   }
@@ -159,7 +162,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
   .update(token)
   .digest('hex');
 
-  const expireDate = Date.now() + 900000; // 15 minutos
+  const expireDate = TOKEN_EXPIRATION_MS; // 15 minutos
 
   user.passwordResetToken = passwordReset;
   user.passwordResetExpires = expireDate;
@@ -209,7 +212,7 @@ const updatePassword = catchAsync(async (req, res, next) => {
     return next(new AppError('Contraseña actual incorrecta', 401));
   }
 
-  user.password = newPassword;
+  user.password = req.body.newPassword;
   await user.save();
 
   createSendToken(user, 200, res);

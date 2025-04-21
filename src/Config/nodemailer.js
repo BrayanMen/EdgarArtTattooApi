@@ -17,7 +17,7 @@ const transporterCreate = ()=>{
 
 const sendPasswordReset = async(email, token)=>{
     const transporter = transporterCreate();
-    const url = `${env.CLIENT_URLS}/resetPassword/${token}`;
+    const url = `${env.CLIENT_URL}/resetPassword/${token}`;
 
     const emailOption = {
         from: env.EMAIL_USER,
