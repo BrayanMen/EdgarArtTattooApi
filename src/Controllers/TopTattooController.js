@@ -57,8 +57,31 @@ const reOrder = catchAsync(async (req, res, next) => {
   }
 });
 
+const toggleActiveImage = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  const tattoo = await TopTattoo.findById(id);
+  if (!tattoo) return res.status(404).json({ message: "Tatuaje no encontrado" });
+
+  const activeTatto = await TopTattoo.countDocuments({ active: true });
+
+  if (tattoo.active && activeTatto <= 1) {
+    return res.status(400).json({ message: "Debes tener al menos un tatuaje activo" });
+  }
+
+  if (!tattoo.active && activeTatto >= 6) {
+    return res.status(400).json({ message: "Solo puedes tener 6 tatuajes activos" });
+  }
+
+  tattoo.active = !tattoo.active;
+  await tattoo.save();
+
+  res.json({ message: "Estado actualizado", tattoo });
+});
+
 
 module.exports = {
    addImageAtPosition,
-   reOrder
+   reOrder,
+   toggleActiveImage
 }
