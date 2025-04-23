@@ -33,24 +33,30 @@ const addImageAtPosition = catchAsync(async (imageUrl, order) => {
     }
   });
 
-  const reOrder = catchAsync(async (req, res, next) => {
-        try {
-          const { reorderImag } = req.body; 
+const reOrder = catchAsync(async (req, res, next) => {
+  const tattoos = req.body; // [{ _id, order }]
 
-          if (reorderImag.length > 6) {
-            return res.status(400).json({ message: 'Solo se pueden tener 6 imágenes activas.' });
-          }
-          const updatedOrder = reorderImag.map((image, index) =>
-            TopTatto.findByIdAndUpdate(image._id, { order: index + 1 })
-          );
-          await Promise.all(updatedOrder);
-      
-          res.json({ message: 'Orden actualizado exitosamente.' });
-        } catch (error) {
-          console.error('Error al actualizar el orden:', error);
-          res.status(500).json({ message: 'Error al actualizar el orden.' });
-        }
-  });
+  if (tattoos.length > 6) {
+    return res.status(400).json({ message: 'Solo se permiten 6 imágenes activas.' });
+  }
+
+  try {
+    const bulkOps = tattoos.map(t => ({
+      updateOne: {
+        filter: { _id: t._id },
+        update: { order: t.order }
+      }
+    }));
+
+    await TopTatto.bulkWrite(bulkOps);
+
+    res.status(200).json({ message: 'Orden actualizado exitosamente.' });
+  } catch (error) {
+    console.error('Error al actualizar el orden:', error);
+    res.status(500).json({ message: 'Error al actualizar el orden.' });
+  }
+});
+
 
 module.exports = {
    addImageAtPosition,
