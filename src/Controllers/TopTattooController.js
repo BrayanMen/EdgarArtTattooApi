@@ -1,37 +1,37 @@
 const TopTatto = require("../Models/TopTattoo");
 const {catchAsync} = require('../Utils/catchAsync');
 
-const addImageAtPosition = catchAsync(async (imageUrl, order) => {
-    try {      
-      const activeImagesCount = await TopTatto.countDocuments({ active: true });
-      if (activeImagesCount >= 6) {
-        throw new Error('No puedes tener más de 6 imágenes activas');
-      }  
-      const imagesToReorder = await TopTatto.find({ order: { $gte: order } }).sort({ order: 1 });
-      for (const image of imagesToReorder) {
-        if (image.order < 6) {
-          image.order += 1; 
-          await image.save();
-        } else {        
-          image.active = false;
-          await image.save();
-        }
-      }
-  
-      const newImage = new TopTattoo({
-        image: imageUrl,
-        order: order,
-        active: true,
-      });
+const addImageAtPosition = catchAsync(async (req, res) => {
+  try {
+    const { image, order } = req.body;
 
-      await newImage.save();
-  
-      console.log('Imagen agregada exitosamente en la posición:', order);
-    } catch (error) {
-      console.error('Error al agregar la imagen:', error.message);
-      throw new Error('No se pudo agregar la imagen. Inténtalo nuevamente.');
+    const activeImagesCount = await TopTattoo.countDocuments({ active: true });
+    if (activeImagesCount >= 6) {
+      return res.status(400).json({ message: 'No puedes tener más de 6 imágenes activas' });
     }
-  });
+
+    const imagesToReorder = await TopTattoo.find({ order: { $gte: order } }).sort({ order: 1 });
+    for (const imageObj of imagesToReorder) {
+      if (imageObj.order < 6) {
+        imageObj.order += 1;
+      } else {
+        imageObj.active = false;
+      }
+      await imageObj.save();
+    }
+
+    const newImage = await TopTattoo.create({
+      image,
+      order,
+      active: true,
+    });
+
+    res.status(201).json(newImage);
+  } catch (error) {
+    console.error('Error al agregar la imagen:', error.message);
+    res.status(500).json({ message: 'No se pudo agregar la imagen. Inténtalo nuevamente.' });
+  }
+});
 
 const reOrder = catchAsync(async (req, res, next) => {
   const tattoos = req.body; // [{ _id, order }]
