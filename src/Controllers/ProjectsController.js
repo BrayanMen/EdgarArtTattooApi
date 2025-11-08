@@ -1,6 +1,6 @@
 const Projects = require('../Models/Projects');
+const AppError = require('../Utils/AppError');
 const catchAsync = require('../Utils/catchAsync');
-const AppError =  require('../Utils/AppError');
 
 const getAllProjects = catchAsync(async(req, res, next)=>{
     const projects = await Projects.find();

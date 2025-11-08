@@ -27,9 +27,10 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-runEmailTest();
+// runEmailTest();
 
 router.use('/users', userRouter);
+
 router.use('/reviews', reviewRouter);
 
 router.post(

@@ -55,15 +55,6 @@ const UserSchema = new mongoose.Schema({
     }
 );
 
-UserSchema.pre('validate', function (next) {
-    if (this.authProvider === 'local' && !['admin'].includes(this.role)) {
-        this.invalidate('role', 'Rol inválido para autenticación local');
-    }
-    if (this.authProvider !== 'local' && this.role !== 'client') {
-        this.role = 'client';
-    }
-    next();
-});
 
 UserSchema.pre('save', async function (next) {
     if (this.isModified('password') && this.authProvider === 'local') {

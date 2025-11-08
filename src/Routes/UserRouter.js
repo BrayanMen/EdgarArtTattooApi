@@ -16,7 +16,7 @@ const {
     updateUser,
     deleteUser 
 } = require('../Controllers/UserController');
-const { protect, restrictTo } = require('../Middleware/AuthMiddleware');
+const { protect, restrictTo } = require('../Middleware/authMiddleware');
 const { uploadMedia, processMedia } = require('../Middleware/uploadMiddleware');
 
 // Rutas públicas

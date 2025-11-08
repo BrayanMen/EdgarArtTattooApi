@@ -9,7 +9,7 @@ const {
   deleteReviewAdmin,
   getReviewStats
 } = require('../Controllers/ReviewsController');
-const { protect, restrictTo } = require('../Middleware/AuthMiddleware');
+const { protect, restrictTo } = require('../Middleware/authMiddleware');
 
 router.get('/', getReviews);
 router.get('/target/:targetId', getReviews);
