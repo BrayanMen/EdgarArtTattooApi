@@ -1,4 +1,4 @@
-const TopTatto = require("../Models/TopTatto");
+const TopTatto = require("../Models/TopTattoo");
 const {catchAsync} = require('../Utils/catchAsync');
 
 const addImageAtPosition = catchAsync(async (req, res) => {
