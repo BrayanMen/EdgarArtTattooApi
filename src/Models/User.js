@@ -30,6 +30,7 @@ const UserSchema = new mongoose.Schema({
     },
     passwordResetToken: String,
     passwordResetExpires: Date,
+    passwordChangedAt: Date,
     image: {
         type: String,
     },
@@ -57,8 +58,11 @@ const UserSchema = new mongoose.Schema({
 
 
 UserSchema.pre('save', async function (next) {
+    if (!this.isModified('password') || this.isNew) return next();
+
     if (this.isModified('password') && this.authProvider === 'local') {
         this.password = await bcrypt.hash(this.password, 12);
+        this.passwordChangedAt = Date.now() - 1000;
     }
     next();
 });
@@ -73,6 +77,14 @@ UserSchema.methods.generateAuthToken = function () {
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES }
     );
+};
+
+UserSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+    if (this.passwordChangedAt) {
+        const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+        return JWTTimestamp < changedTimestamp;
+    }
+    return false;
 };
 
 const User = mongoose.model('User', UserSchema);

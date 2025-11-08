@@ -7,6 +7,7 @@ const env = cleanEnv(process.env, {
     MONGO_URI: str(),
     JWT_SECRET: str(),
     JWT_EXPIRES: str({ default: '7d' }),
+    JWT_COOKIE_EXPIRES_IN: num({ default: 90 }),
     CLOUD_NAME: str(),
     CLOUD_API_KEY: str(),
     CLOUD_API_SECRET: str(),

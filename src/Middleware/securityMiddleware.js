@@ -30,7 +30,7 @@ const securityMiddleware = [
     mongoSanitize(),
     hpp(),
     cors({
-        origin: env.CLIENT_URLS ? env.CLIENT_URLS.split(',') : env.CLIENT_URL,
+        origin: env.CLIENT_URL,
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,

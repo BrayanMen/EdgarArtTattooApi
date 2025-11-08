@@ -9,21 +9,28 @@ const {
     deleteFromCloudinary,
 } = require('../Middleware/uploadMiddleware');
 const { sendVerifyEmail, sendPasswordReset } = require('../Config/nodemailer');
+const { env } = require('../Config/env');
 
 const signToken = id => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRES,
+    return jwt.sign({ id }, env.JWT_SECRET, {
+        expiresIn: env.JWT_EXPIRES,
     });
 };
 
 const createSendToken = (user, statusCode, res) => {
     const token = signToken(user._id);
+    const cookieOptions = {
+        expires: new Date(Date.now() + env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+        httpOnly: true,
+    };
+    if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+
+    res.cookie('jwt', token, cookieOptions);
 
     user.password = undefined;
 
     res.status(statusCode).json({
         status: 'success',
-        token,
         data: { user },
     });
 };
@@ -211,7 +218,7 @@ const updatePassword = catchAsync(async (req, res, next) => {
         return next(new AppError('Contraseña actual incorrecta', 401));
     }
 
-    user.password = newPassword;
+    user.password = req.body.newPassword;
     await user.save();
 
     createSendToken(user, 200, res);

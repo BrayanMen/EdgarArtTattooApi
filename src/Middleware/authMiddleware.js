@@ -7,14 +7,24 @@ const protect = catchAsync(async (req, res, next) => {
   let token;
   if (req.headers.authorization?.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies.jwt) {
+    token = req.cookies.jwt;
   }
 
-  if (!token) throw new AppError('Acceso no autorizado', 401);
+  if (!token) {
+    return next(new AppError('No has iniciado sesión! Inicia sesión para acceder.', 401));
+  }
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
   const user = await User.findById(decoded.id);
 
-  if (!user) throw new AppError('Usuario ya no existe', 401);
+  if (!user) {
+    return next(new AppError('La usuario que pertenece a este token ya no existe.', 401));
+  }
+
+  if (user.changedPasswordAfter(decoded.iat)) {
+    return next(new AppError('El usuario ha cambiado su contraseña recientemente. Inicie sesión de nuevo.', 401));
+  }
 
   req.user = user;
   next();
@@ -29,5 +39,5 @@ const restrictTo = (...roles) => catchAsync((req, res, next) => {
 
 module.exports = {
   protect,
-  restrictTo
+  restrictTo,
 };
