@@ -1,6 +1,6 @@
 const TopTatto = require('../Models/TopTattoo');
 const AppError = require('../Utils/AppError');
-const { catchAsync } = require('../Utils/catchAsync');
+const catchAsync  = require('../Utils/catchAsync');
 
 const addImageAtPosition = catchAsync(async (req, res, next) => {
     const { image, order } = req.body;

@@ -2,11 +2,11 @@ const {testEmail} = require('../Config/nodemailer');
 
 const runEmailTest = async () => {
     try {
-      console.log('Iniciando prueba de envío de email...');
+      logger.info('Iniciando prueba de envío de email...');
       await testEmail();
-      console.log('✅ Prueba de email completada exitosamente');
+      logger.info('✅ Prueba de email completada exitosamente');
     } catch (error) {
-      console.error('❌ Error en prueba de email:', error);
+      logger.error('❌ Error en prueba de email:', error);
     }
   };
 

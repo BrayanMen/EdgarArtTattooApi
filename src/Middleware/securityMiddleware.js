@@ -5,6 +5,10 @@ const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const { env } = require('../Config/env');
 
+const allowedOrigins = env.CLIENT_URLS
+    ? env.CLIENT_URLS.split(',').map(url => url.trim())
+    : [env.CLIENT_URL];
+
 const securityMiddleware = [
     helmet({
         contentSecurityPolicy: {
@@ -30,7 +34,14 @@ const securityMiddleware = [
     mongoSanitize(),
     hpp(),
     cors({
-        origin: env.CLIENT_URL,
+        origin: (origin, callback) => {           
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.indexOf(origin) === -1) {
+                const msg = 'La política CORS de este sitio no permite el acceso desde el origen especificado.';
+                return callback(new Error(msg), false);
+            }
+            return callback(null, true);
+        },
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true,
