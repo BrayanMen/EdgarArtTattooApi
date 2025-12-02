@@ -1,26 +1,24 @@
-const TopTatto = require('../Models/TopTattoo');
+const TopTattoo = require('../Models/TopTattoo'); // Corregí el typo "TopTatto"
 const AppError = require('../Utils/AppError');
-const catchAsync  = require('../Utils/catchAsync');
+const catchAsync = require('../Utils/catchAsync');
+const factory = require('./handlerFactory');
 
-const addImageAtPosition = catchAsync(async (req, res, next) => {
+// 1. Agregar Imagen (Con validación de límite)
+exports.addImageAtPosition = catchAsync(async (req, res, next) => {
     const { image, order } = req.body;
 
-    const activeImagesCount = await TopTattoo.countDocuments({ active: true });
-
-    if (activeImagesCount >= 6) {
-        return next(new AppError('No puedes tener más de 6 imágenes activas', 400));
+    // Validación extra por seguridad (aunque el modelo ya lo tiene)
+    const activeCount = await TopTattoo.countDocuments({ active: true });
+    if (activeCount >= 6) {
+        return next(new AppError('Límite de 6 imágenes alcanzado. Desactiva una primero.', 400));
     }
 
-    const imagesToReorder = await TopTattoo.find({ order: { $gte: order } }).sort({ order: 1 });
-    
-    for (const imageObj of imagesToReorder) {
-        if (imageObj.order < 6) {
-            imageObj.order += 1;
-        } else {
-            imageObj.active = false;
-        }
-        await imageObj.save();
-    }
+    // Desplazar imágenes existentes si ocupamos su lugar
+    // Ej: Si meto una en pos 2, la 2, 3, 4... se mueven a +1
+    await TopTattoo.updateMany(
+        { order: { $gte: order } },
+        { $inc: { order: 1 } }
+    );
 
     const newImage = await TopTattoo.create({
         image,
@@ -30,17 +28,19 @@ const addImageAtPosition = catchAsync(async (req, res, next) => {
 
     res.status(201).json({
         status: 'success',
-        data: newImage
+        data: { data: newImage }
     });
 });
 
-const reOrder = catchAsync(async (req, res, next) => {
-    const tattoos = req.body; // Espera: [{ _id, order }]
+// 2. Reordenamiento Drag & Drop (Desde el Admin Panel)
+exports.reOrder = catchAsync(async (req, res, next) => {
+    const tattoos = req.body; // Espera array: [{ _id: '...', order: 1 }, { _id: '...', order: 2 }]
 
-    if (!Array.isArray(tattoos) || tattoos.length > 6) {
-         return next(new AppError('Datos de reordenamiento inválidos', 400));
+    if (!Array.isArray(tattoos)) {
+         return next(new AppError('Formato inválido. Se requiere un array.', 400));
     }
 
+    // Operación masiva eficiente (BulkWrite)
     const bulkOps = tattoos.map(t => ({
         updateOne: {
             filter: { _id: t._id },
@@ -56,36 +56,30 @@ const reOrder = catchAsync(async (req, res, next) => {
     });
 });
 
-const toggleActiveImage = catchAsync(async (req, res) => {
-    const { id } = req.params;
+// 3. Toggle Activo/Inactivo
+exports.toggleActiveImage = catchAsync(async (req, res, next) => {
+    const tattoo = await TopTattoo.findById(req.params.id);
+    if (!tattoo) return next(new AppError('No encontrado', 404));
 
-    const tattoo = await TopTattoo.findById(id);
-    if (!tattoo) {
-        return next(new AppError('Tatuaje no encontrado', 404));
+    // Validar reglas de negocio antes de cambiar
+    const activeCount = await TopTattoo.countDocuments({ active: true });
+
+    if (!tattoo.active && activeCount >= 6) {
+        return next(new AppError('Ya hay 6 imágenes activas.', 400));
     }
-
-    const activeTattooCount = await TopTattoo.countDocuments({ active: true });
-
-    if (tattoo.active && activeTattooCount <= 1) {
-        return next(new AppError('Debes tener al menos un tatuaje activo', 400));
-    }
-
-    if (!tattoo.active && activeTattooCount >= 6) {
-        return next(new AppError('Solo puedes tener 6 tatuajes activos', 400));
-    }
+    // Opcional: Impedir dejar 0 activas
+    // if (tattoo.active && activeCount <= 1) return next(...)
 
     tattoo.active = !tattoo.active;
     await tattoo.save();
 
     res.status(200).json({
         status: 'success',
-        message: 'Estado actualizado',
-        data: { tattoo },
+        data: { data: tattoo }
     });
 });
 
-module.exports = {
-    addImageAtPosition,
-    reOrder,
-    toggleActiveImage,
-};
+// CRUD Estándar
+exports.getAllTopTattoos = factory.getAll(TopTattoo);
+exports.deleteTopTattoo = factory.deleteOne(TopTattoo);
+exports.getTopTattoo = factory.getOne(TopTattoo);
