@@ -1,56 +1,59 @@
 const mongoose = require('mongoose');
-const { stringRequired, commonSchemaOptions, booleanDefault } = require('../Utils/mongooseUtils');
+const { stringRequired, commonSchemaOptions, slugify } = require('../Utils/mongooseUtils');
 
 const projectsSchema = new mongoose.Schema({
-    title: stringRequired('El título', 100),   
+    title: stringRequired('El título', 100),
+    slug: { type: String, unique: true, index: true }, // SEO URL
+    
+    // Soporte unificado para portada (puede ser img o video poster)
     mainImage: {
-        type: mongoose.Schema.Types.Mixed,
-        required: true
+        public_id: String,
+        url: { type: String, required: [true, 'La imagen principal es requerida'] },
+        format: String
     },
+
+    // Galería mixta: Fotos, Videos y 3D (.glb)
     media: [{
         type: {
             type: String,
-            enum: ['image', 'video'],
-            required: true
+            enum: ['image', 'video', '3d'], // Agregamos soporte explícito 3D
+            default: 'image'
         },
-        url: {
-            type: String,
-            required: true,
-            validate: {
-                validator: function (v) {
-                    const isImage = /\.(jpg|jpe?g|png|gif|webp)$/i.test(v);
-                    const isVideo = /\.(mp4|mov|webm)$/i.test(v);
-                    return this.type === 'image' ? isImage : isVideo;
-                },
-                message: 'Formato de archivo inválido'
-            }
-        },
+        url: { type: String, required: true },
+        public_id: String,
+        format: String
     }],
+
     description: {
         client: stringRequired('Cliente', 50),
-        techniques: {
-            type: [String],
-            validate: {
-                validator: function (v) {
-                    return v.length > 0;
-                },
-                message: 'Al menos una técnica requerida'
-            }
-        },
+        techniques: [String], // Array simple es mejor para búsquedas
+        bodyPart: String, // Ej: "Espalda completa"
         duration: {
             sessions: { type: Number, min: 1 },
-            hoursPerSession: { type: Number, min: 1 }
+            hoursTotal: { type: Number, min: 1 } // Simplificado
         },
-        story: stringRequired('Historia', 500)
+        story: stringRequired('Historia del proyecto', 2000) // Más espacio para contar la historia
     },
-    featured: booleanDefault(),
-    active: booleanDefault(),
-},commonSchemaOptions);
+    
+    isFeatured: { type: Boolean, default: false, index: true }, // Para filtrar rápidos en el Home
+    active: { type: Boolean, default: true, index: true },
+    
+    // Contadores para evitar queries pesadas de conteo
+    stats: {
+        views: { type: Number, default: 0 },
+        likes: { type: Number, default: 0 }
+    }
+}, commonSchemaOptions);
 
-projectsSchema.virtual('description.totalHours').get(function () {
-    return this.description.duration.sessions * this.description.duration.hoursPerSession;
+// Middleware Pre-Save: Generar Slug Automáticamente
+projectsSchema.pre('save', function(next) {
+    if (!this.isModified('title')) return next();
+    this.slug = slugify(this.title);
+    next();
 });
 
-const Projects = mongoose.model('Projects', projectsSchema);
+// Índice de texto para el buscador interno
+projectsSchema.index({ title: 'text', 'description.story': 'text', 'description.techniques': 'text' });
 
+const Projects = mongoose.model('Projects', projectsSchema);
 module.exports = Projects;

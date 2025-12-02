@@ -1,15 +1,15 @@
-const catchAsync = require('../Utils/catchAsync');
 const User = require('../Models/User');
+const catchAsync = require('../Utils/catchAsync');
 const AppError = require('../Utils/AppError');
+const factory = require('./handlerFactory'); // ¡Usamos el Factory!
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const {
-    uploadMedia,
-    processMedia,
-    deleteFromCloudinary,
-} = require('../Middleware/uploadMiddleware');
+const { OAuth2Client } = require('google-auth-library');
+const { deleteFromCloudinary } = require('../Middleware/uploadMiddleware');
 const { sendVerifyEmail, sendPasswordReset } = require('../Config/nodemailer');
 const { env } = require('../Config/env');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const signToken = id => {
     return jwt.sign({ id }, env.JWT_SECRET, {
@@ -26,86 +26,88 @@ const createSendToken = (user, statusCode, res) => {
     if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
 
     res.cookie('jwt', token, cookieOptions);
-
-    user.password = undefined;
+    user.password = undefined; // Ocultamos password en la respuesta
 
     res.status(statusCode).json({
         status: 'success',
+        token,
         data: { user },
     });
 };
 
-const signup = catchAsync(async (req, res, next) => {
-    if (!req.body || Object.keys(req.body).length === 0) {
-        return next(new AppError('El cuerpo de la solicitud está vacío', 400));
-    }
+// --- AUTH PÚBLICA ---
 
-    const { email, fullName, password, role } = req.body;
-
-    if (!email || !fullName || !password) {
-        return next(new AppError('Email, nombre completo y contraseña son requeridos', 400));
-    }
-
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-        return next(new AppError('El email ya está registrado', 400));
-    }
-
+exports.signup = catchAsync(async (req, res, next) => {
+    // 1. Seguridad: Filtramos solo los campos permitidos
     const newUser = await User.create({
-        fullName,
-        email,
-        password,
-        role: role || 'client',
-        authProvider: 'local',
+        fullName: req.body.fullName,
+        email: req.body.email,
+        password: req.body.password,
+        role: 'client', // FORZADO: Nadie puede registrarse como admin por aquí
+        authProvider: 'local'
     });
 
     const token = crypto.randomBytes(32).toString('hex');
     newUser.emailVerificationToken = crypto.createHash('sha256').update(token).digest('hex');
     await newUser.save({ validateBeforeSave: false });
 
+    // Descomentar cuando configures el SMTP real
     // await sendVerifyEmail(newUser.email, token);
 
     createSendToken(newUser, 201, res);
 });
 
-const login = catchAsync(async (req, res, next) => {
+exports.login = catchAsync(async (req, res, next) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-        return next(new AppError('Por favor proporcione email y contraseña', 400));
-    }
+    if (!email || !password) return next(new AppError('Email y contraseña requeridos', 400));
 
     const user = await User.findOne({ email }).select('+password');
 
     if (!user || !(await user.comparePassword(password))) {
-        return next(new AppError('Email o contraseña incorrectos', 401));
+        return next(new AppError('Credenciales incorrectas', 401));
     }
 
     createSendToken(user, 200, res);
 });
 
-const socialLogin = catchAsync(async (req, res, next) => {
-    const { email, fullName, image, socialId, authProvider } = req.body;
+exports.socialLogin = catchAsync(async (req, res, next) => {
+    const { token, authProvider } = req.body;
+    let userData = {};
 
-    let user = await User.findOne({ email });
+    if (authProvider === 'google') {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+
+        userData = {
+            email: payload.email,
+            fullName: payload.name,
+            image: { url: payload.picture, public_id: null },
+            socialId: payload.sub,
+            emailVerified: payload.email_verified,
+        };
+    } else {
+        return next(new AppError('Proveedor no soportado', 400));
+    }
+
+    let user = await User.findOne({ email: userData.email });
 
     if (!user) {
         user = await User.create({
-            email,
-            fullName,
-            image,
-            socialId,
+            ...userData,
+            password: crypto.randomBytes(16).toString('hex'),
             authProvider,
-            emailVerified: true,
+            role: 'client', // Forzamos rol
         });
-    } else if (user.authProvider !== authProvider) {
-        return next(new AppError(`Esta cuenta está registrada con ${user.authProvider}`, 400));
     }
 
     createSendToken(user, 200, res);
 });
 
-const verificationMail = catchAsync(async (req, res, next) => {
+exports.verificationMail = catchAsync(async (req, res, next) => {
     const token = crypto.createHash('sha256').update(req.params.token).digest('hex');
     const user = await User.findOne({
         emailVerificationToken: token,
@@ -125,44 +127,7 @@ const verificationMail = catchAsync(async (req, res, next) => {
     });
 });
 
-const updateProfile = catchAsync(async (req, res, next) => {
-    const allowedUpdates = ['fullName', 'email', 'socialLinks'];
-    const updates = Object.keys(req.body);
-    const isValidOperation = updates.every(update => allowedUpdates.includes(update));
-
-    if (!isValidOperation) {
-        return next(new AppError('Actualizaciones no válidas', 400));
-    }
-
-    const user = await User.findById(req.user.id);
-
-    updates.forEach(update => (user[update] = req.body[update]));
-    await user.save();
-
-    res.status(200).json({
-        status: 'success',
-        data: { user },
-    });
-});
-
-const updateProfileImage = catchAsync(async (req, res, next) => {
-    const user = await User.findById(req.user.id);
-
-    if (user.image?.public_id) {
-        await deleteFromCloudinary(user.image.public_id);
-    }
-
-    user.image = req.body.image;
-
-    await user.save();
-
-    res.status(200).json({
-        status: 'success',
-        data: { user },
-    });
-});
-
-const forgotPassword = catchAsync(async (req, res, next) => {
+exports.forgotPassword = catchAsync(async (req, res, next) => {
     const user = await User.findOne({ email: req.body.email });
     if (!user) {
         return next(new AppError('No se encuentra el Usuario', 404));
@@ -192,7 +157,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
     }
 });
 
-const resetPassword = catchAsync(async (req, res, next) => {
+exports.resetPassword = catchAsync(async (req, res, next) => {
     const token = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
     const user = await User.findOne({
@@ -211,7 +176,9 @@ const resetPassword = catchAsync(async (req, res, next) => {
     createSendToken(user, 200, res);
 });
 
-const updatePassword = catchAsync(async (req, res, next) => {
+// --- GESTIÓN DE CUENTA (Usuario Logueado) ---
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
     const user = await User.findById(req.user.id).select('+password');
 
     if (!(await user.comparePassword(req.body.currentPassword))) {
@@ -224,7 +191,7 @@ const updatePassword = catchAsync(async (req, res, next) => {
     createSendToken(user, 200, res);
 });
 
-const getProfile = catchAsync(async (req, res) => {
+exports.getProfile = catchAsync(async (req, res) => {
     const user = await User.findById(req.user.id);
 
     res.status(200).json({
@@ -233,85 +200,62 @@ const getProfile = catchAsync(async (req, res) => {
     });
 });
 
-const getAllUsers = catchAsync(async (req, res) => {
-    const users = await User.find();
+// Helper para filtrar objetos
+const filterObj = (obj, ...allowedFields) => {
+    const newObj = {};
+    Object.keys(obj).forEach(el => {
+        if (allowedFields.includes(el)) newObj[el] = obj[el];
+    });
+    return newObj;
+};
+
+exports.updateProfile = catchAsync(async (req, res, next) => {
+    // 1. Prevenir que intenten cambiar password o rol aquí
+    if (req.body.password || req.body.role) {
+        return next(
+            new AppError('Esta ruta no es para contraseñas o roles. Usa /update-password', 400)
+        );
+    }
+
+    // 2. Filtrar campos permitidos (SOLO lo que el usuario puede editar de sí mismo)
+    const filteredBody = filterObj(req.body, 'fullName', 'email', 'socialLinks');
+
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
+        new: true,
+        runValidators: true,
+    });
 
     res.status(200).json({
         status: 'success',
-        results: users.length,
-        data: { users },
+        data: { user: updatedUser },
     });
 });
 
-const getUser = catchAsync(async (req, res, next) => {
-    const user = await User.findById(req.params.id);
+exports.updateProfileImage = catchAsync(async (req, res, next) => {
+    // Cloudinary processing ya ocurrió en el middleware 'processMedia'
+    // La imagen procesada viene en req.body.image
+    if (!req.body.image) return next(new AppError('No se proporcionó imagen', 400));
 
-    if (!user) {
-        return next(new AppError('No se encontró el usuario', 404));
-    }
+    const user = await User.findById(req.user.id);
 
-    res.status(200).json({
-        status: 'success',
-        data: { user },
-    });
-});
-
-const updateUser = catchAsync(async (req, res, next) => {
-    const allowedUpdates = ['fullName', 'email', 'role', 'active'];
-    const updates = Object.keys(req.body);
-    const isValidOperation = updates.every(update => allowedUpdates.includes(update));
-
-    if (!isValidOperation) {
-        return next(new AppError('Actualizaciones no válidas', 400));
-    }
-
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-        return next(new AppError('No se encontró el usuario', 404));
-    }
-
-    updates.forEach(update => (user[update] = req.body[update]));
-    await user.save();
-
-    res.status(200).json({
-        status: 'success',
-        data: { user },
-    });
-});
-
-const deleteUser = catchAsync(async (req, res, next) => {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-        return next(new AppError('No se encontró el usuario', 404));
-    }
-
-    if (user.image?.public_id) {
+    // Si ya tenía imagen, la borramos de Cloudinary
+    if (user.image && user.image.public_id) {
         await deleteFromCloudinary(user.image.public_id);
     }
 
-    await user.remove();
+    user.image = req.body.image;
+    await user.save({ validateBeforeSave: false });
 
-    res.status(204).json({
+    res.status(200).json({
         status: 'success',
-        data: null,
+        data: { user },
     });
 });
 
-module.exports = {
-    signup,
-    login,
-    socialLogin,
-    verificationMail,
-    updateProfile,
-    updateProfileImage,
-    forgotPassword,
-    resetPassword,
-    updatePassword,
-    getProfile,
-    getAllUsers,
-    getUser,
-    updateUser,
-    deleteUser,
-};
+// --- ADMIN ROUTES (Usando Factory) ---
+// Estas rutas DEBEN estar protegidas con restrictTo('admin') en el Router
+
+exports.getAllUsers = factory.getAll(User);
+exports.getUser = factory.getOne(User);
+exports.updateUser = factory.updateOne(User); 
+exports.deleteUser = factory.deleteOne(User);

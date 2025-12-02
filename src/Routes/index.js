@@ -1,51 +1,37 @@
 const { Router } = require('express');
 const router = Router();
 const { uploadMedia, processMedia } = require('../Middleware/uploadMiddleware');
+const { protect, restrictTo } = require('../Middleware/authMiddleware');
+
+// Importar Routers
 const userRouter = require('./UserRouter');
 const reviewRouter = require('./ReviewsRouter');
 const topTattooRouter = require('./topTattooRoutes');
-const { runEmailTest } = require('../Utils/testEmail');
-const { protect, restrictTo } = require('../Middleware/authMiddleware');
+const productsRouter = require('./ProductsRouter');
+const projectsRouter = require('./ProjectsRouter'); // Necesitas crear este archivo
+// const seminarsRouter = require('./SeminarsRouter'); // Futura implementación
 
-// router.get("/prueba", (req, res)=>{
-//     return res.status(200).send('Servidor funcionando...')
-// });
+// Health Check
+router.get('/health', (req, res) => res.status(200).send('API OK'));
 
-if (process.env.NODE_ENV === 'development') {
-    router.post('/test-email', async (req, res) => {
-        try {
-            await testEmail();
-            res.status(200).json({
-                status: 'success',
-                message: 'Email de prueba enviado correctamente',
-            });
-        } catch (error) {
-            res.status(500).json({
-                status: 'error',
-                message: 'Error al enviar email de prueba',
-                error: error.message,
-            });
-        }
-    });
-}
-
-// runEmailTest();
-
+// Rutas de Negocio
 router.use('/users', userRouter);
 router.use('/reviews', reviewRouter);
 router.use('/top-tattoos', topTattooRouter);
+router.use('/products', productsRouter);
+router.use('/projects', projectsRouter); // Ahora el front puede llamar a /api/projects
 
+// Ruta Universal de Carga (Para uso administrativo rápido o wysiwyg editors)
 router.post(
-    '/upload',
+    '/upload-global',
     protect,
     restrictTo('admin'),
-    uploadMedia('file'),
+    uploadMedia('file'), // 'file' es el nombre del campo en el FormData
     processMedia('file'),
     (req, res) => {
         res.status(200).json({
             status: 'success',
-            message: 'Archivo subido exitosamente',
-            data: req.body.file,
+            data: req.body.file, // Retorna la URL y public_id
         });
     }
 );

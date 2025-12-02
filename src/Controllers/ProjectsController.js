@@ -1,67 +1,35 @@
 const Projects = require('../Models/Projects');
-const AppError = require('../Utils/AppError');
 const catchAsync = require('../Utils/catchAsync');
+const factory = require('./handlerFactory');
 
-const getAllProjects = catchAsync(async(req, res, next)=>{
-    const projects = await Projects.find();
+// Middleware para buscar por Slug en lugar de ID (SEO Friendly)
+exports.getProjectBySlug = catchAsync(async (req, res, next) => {
+    const project = await Projects.findOne({ slug: req.params.slug });
+
+    if (!project) {
+        return next(new AppError('No se encontró proyecto con ese nombre', 404));
+    }
+
     res.status(200).json({
-        status: 'Success',
-        results: projects.length,
-        data: {projects}
+        status: 'success',
+        data: { project },
     });
 });
 
-const getProject = catchAsync(async(req,res,next)=>{
-    const project = await Projects.findById(req.params.id);
-    if(!project){
-        return next(new AppError("No se encontro el proyecto", 404))
-    }
-    res.status(200).json({
-        status: 'Success',
-        data: {project}
-    });
+// Lógica para añadir "Views" (contador de visitas)
+exports.viewProject = catchAsync(async (req, res, next) => {
+    const project = await Projects.findOneAndUpdate(
+        { slug: req.params.slug },
+        { $inc: { 'stats.views': 1 } }, // Incrementa 1 atomicamente
+        { new: true }
+    );
+
+    res.status(200).json({ status: 'success', views: project.stats.views });
 });
 
-const createProject = catchAsync(async(req, res, next)=>{
-    const newProject = await Projects.create(req.body);
-    if (!newProject) {
-        return next(new AppError("No se pudo crear el proyecto", 400))
-    }
-    res.status(201).json({
-        status: 'Success',
-        data: {project: newProject}
-    })
-});
-
-const updateProject = catchAsync(async(req, res, next)=>{
-    const project = await Projects.findByIdAndUpdate(req.params.id, req.body,{
-        new: true,
-        runValidators: true
-    });
-    if(!project){
-        return next(new AppError("No se encontro el proyecto para actualizar", 404))
-    }
-    res.status(200).json({
-        status: 'Success',
-        data: {project}
-    })
-})
-
-const deleteProject = catchAsync(async (req, res, next)=>{
-    const project = await Projects.findByIdAndDelete(req.params.id);
-    if(!project){
-        return next(new AppError("No se encontro el proyecto para eliminar", 404))
-    }
-    res.status(204).json({
-        status: 'Success',
-        data: null
-    })
-})
-
-module.exports = {
-    getAllProjects,
-    getProject,
-    createProject,
-    updateProject,
-    deleteProject
-}
+// CRUD Estándar
+exports.createProject = factory.createOne(Projects);
+exports.getAllProjects = factory.getAll(Projects);
+exports.updateProject = factory.updateOne(Projects);
+exports.deleteProject = factory.deleteOne(Projects);
+exports.getProject = factory.getOne(Projects);
