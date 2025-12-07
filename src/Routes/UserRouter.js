@@ -1,55 +1,41 @@
 const express = require('express');
 const router = express.Router();
-const { 
-    signup,
-    login,
-    socialLogin,
-    verificationMail,
-    updateProfile,
-    updateProfileImage,
-    forgotPassword,
-    resetPassword,
-    updatePassword,
-    getProfile,
-    getAllUsers,
-    getUser,
-    updateUser,
-    deleteUser 
-} = require('../Controllers/UserController');
+const userController = require('../Controllers/UserController');
 const { protect, restrictTo } = require('../Middleware/authMiddleware');
 const { uploadMedia, processMedia } = require('../Middleware/uploadMiddleware');
 
-// Rutas públicas
-router.post('/signup', signup);
-router.post('/login', login);
-router.post('/social-login', socialLogin);
-router.post('/forgot-password', forgotPassword);
-router.patch('/reset-password/:token', resetPassword);
-router.get('/verify/:token', verificationMail);
+// --- 1. Autenticación Pública ---
+router.post('/signup', userController.signup);
+router.post('/login', userController.login);
+router.post('/social-login', userController.socialLogin);
 
-// Rutas protegidas
-router.use(protect);
+router.post('/forgot-password', userController.forgotPassword);
+router.patch('/reset-password/:token', userController.resetPassword);
+router.get('/verify/:token', userController.verificationMail);
 
-router.route('/profile')
-    .get(getProfile)
-    .patch(updateProfile);
+// --- 2. Rutas Protegidas (Requieren Login) ---
+router.use(protect); // Aplica a todo lo de abajo
 
-router.patch('/profile/image', 
-    uploadMedia('image'),
-    processMedia('image'),
-    updateProfileImage
+router.patch('/update-password', userController.updatePassword);
+
+router.route('/profile').get(userController.getProfile).patch(userController.updateProfile);
+
+router.patch(
+    '/profile/image',
+    uploadMedia('image'), // Middleware de Multer
+    processMedia('image'), // Middleware de Cloudinary/Sharp
+    userController.updateProfileImage
 );
 
-router.patch('/update-password', updatePassword);
+// --- 3. Rutas de Administrador ---
+router.use(restrictTo('admin')); // Aplica a todo lo de abajo
 
-router.use(restrictTo('admin'));
+router.route('/').get(userController.getAllUsers);
 
-router.route('/')
-    .get(getAllUsers);
-
-router.route('/:id')
-    .get(getUser)
-    .patch(updateUser)
-    .delete(deleteUser);
+router
+    .route('/:id')
+    .get(userController.getUser)
+    .patch(userController.updateUser)
+    .delete(userController.deleteUser);
 
 module.exports = router;

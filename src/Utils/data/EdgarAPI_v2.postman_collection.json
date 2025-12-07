@@ -1,0 +1,199 @@
+{
+	"info": {
+		"name": "Edgar Art Tattoo API v2 (Senior Architecture)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Auth & Users",
+			"item": [
+				{
+					"name": "Signup (Client)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"Nuevo Cliente\",\n    \"email\": \"cliente@test.com\",\n    \"password\": \"password123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{url}}/users/signup", "host": ["{{url}}"], "path": ["users", "signup"] }
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(pm.response.code === 200) {",
+									"    pm.environment.set('jwt', pm.response.json().token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"cliente@test.com\",\n    \"password\": \"password123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{url}}/users/login", "host": ["{{url}}"], "path": ["users", "login"] }
+					}
+				},
+				{
+					"name": "Get Profile (Me)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+						"url": { "raw": "{{url}}/users/profile", "host": ["{{url}}"], "path": ["users", "profile"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Gallery (3D & Parallax)",
+			"item": [
+				{
+					"name": "Create Gallery Item (Multipart)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "title", "value": "Diseño Samurai 3D", "type": "text" },
+								{ "key": "type", "value": "3D Model", "type": "text" },
+								{ "key": "displayMode", "value": "3d-model", "type": "text" },
+								{ "key": "category", "value": "Realismo", "type": "text" },
+								{ "key": "mainImage", "type": "file", "src": [] },
+								{ "key": "backgroundImage", "type": "file", "src": [] }
+							]
+						},
+						"url": { "raw": "{{url}}/gallery", "host": ["{{url}}"], "path": ["gallery"] }
+					}
+				},
+				{
+					"name": "Get All Gallery",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{url}}/gallery", "host": ["{{url}}"], "path": ["gallery"] }
+					}
+				},
+                {
+					"name": "Get Top 5 (Home)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{url}}/gallery/top-5", "host": ["{{url}}"], "path": ["gallery", "top-5"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Projects (Portfolio)",
+			"item": [
+				{
+					"name": "Create Project",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Espalda Completa Dragón\",\n    \"mainImage\": { \"url\": \"https://imagen.com/test.jpg\", \"public_id\": \"123\" },\n    \"description\": {\n        \"client\": \"Juan Perez\",\n        \"story\": \"Una historia épica...\",\n        \"techniques\": [\"Blackwork\", \"Dotwork\"]\n    }\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{url}}/projects", "host": ["{{url}}"], "path": ["projects"] }
+					}
+				},
+				{
+					"name": "Get by Slug (SEO)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{url}}/projects/slug/espalda-completa-dragon", "host": ["{{url}}"], "path": ["projects", "slug", "espalda-completa-dragon"] }
+					}
+				}
+			]
+		},
+        {
+			"name": "4. E-commerce (Orders)",
+			"item": [
+				{
+					"name": "Checkout (Create Order)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"items\": [\n        { \"id\": \"PRODUCT_ID_HERE\", \"type\": \"Product\", \"quantity\": 1 },\n        { \"id\": \"SEMINAR_ID_HERE\", \"type\": \"Seminar\", \"quantity\": 1 }\n    ],\n    \"paymentMethod\": \"mercadopago\",\n    \"shippingAddress\": { \"city\": \"Bogota\", \"street\": \"Calle 123\" }\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{url}}/orders", "host": ["{{url}}"], "path": ["orders"] }
+					}
+				},
+                {
+					"name": "My Orders",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+						"url": { "raw": "{{url}}/orders/my-orders", "host": ["{{url}}"], "path": ["orders", "my-orders"] }
+					}
+				}
+			]
+		},
+        {
+			"name": "5. Appointments",
+			"item": [
+				{
+					"name": "Request Appointment",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Quiero un lobo en el antebrazo\",\n    \"bodyPart\": \"Antebrazo\",\n    \"size\": \"15cm\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{url}}/appointments/request", "host": ["{{url}}"], "path": ["appointments", "request"] }
+					}
+				}
+			]
+		},
+        {
+			"name": "6. Top Tattoos",
+			"item": [
+				{
+					"name": "Get Top Tattoos",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{url}}/top-tattoos", "host": ["{{url}}"], "path": ["top-tattoos"] }
+					}
+				},
+                {
+					"name": "Add to Top (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Authorization", "value": "Bearer {{jwt}}" }],
+                        "body": {
+							"mode": "raw",
+							"raw": "{\n    \"image\": { \"url\": \"...\", \"public_id\": \"...\" },\n    \"order\": 1\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{url}}/top-tattoos", "host": ["{{url}}"], "path": ["top-tattoos"] }
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "url", "value": "http://localhost:3001", "type": "string" }
+	]
+}

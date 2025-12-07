@@ -3,7 +3,7 @@ const User = require('../Models/User');
 const factory = require('./handlerFactory');
 const catchAsync = require('../Utils/catchAsync');
 const AppError = require('../Utils/AppError');
-const { sendEmail } = require('../Utils/email'); // Asumo un util de email genérico
+const { sendEmail } = require('../Utils/emailTemplate'); // Asumo un util de email genérico
 
 // 1. Cliente solicita cita
 exports.requestAppointment = catchAsync(async (req, res, next) => {

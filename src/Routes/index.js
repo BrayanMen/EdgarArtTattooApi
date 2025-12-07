@@ -8,30 +8,39 @@ const userRouter = require('./UserRouter');
 const reviewRouter = require('./ReviewsRouter');
 const topTattooRouter = require('./topTattooRoutes');
 const productsRouter = require('./ProductsRouter');
-const projectsRouter = require('./ProjectsRouter'); // Necesitas crear este archivo
-// const seminarsRouter = require('./SeminarsRouter'); // Futura implementación
+const projectsRouter = require('./ProjectsRouter');
+const galleryRouter = require('./GalleryRouter');
+const orderRouter = require('./OrderRouter');
+const appointmentRouter = require('./AppointmentRouter');
+const seminarRouter = require('./SeminarRouter');
 
 // Health Check
-router.get('/health', (req, res) => res.status(200).send('API OK'));
+router.get('/health', (req, res) => res.status(200).send('API v2 OK 🚀'));
 
 // Rutas de Negocio
 router.use('/users', userRouter);
 router.use('/reviews', reviewRouter);
 router.use('/top-tattoos', topTattooRouter);
 router.use('/products', productsRouter);
-router.use('/projects', projectsRouter); // Ahora el front puede llamar a /api/projects
+router.use('/projects', projectsRouter);
+router.use('/gallery', galleryRouter);
+router.use('/orders', orderRouter);
+router.use('/appointments', appointmentRouter);
+router.use('/seminars', seminarRouter);
 
 // Ruta Universal de Carga (Para uso administrativo rápido o wysiwyg editors)
+// Retorna la URL para que el front la pegue donde quiera
 router.post(
     '/upload-global',
     protect,
     restrictTo('admin'),
-    uploadMedia('file'), // 'file' es el nombre del campo en el FormData
+    uploadMedia('file'),
     processMedia('file'),
     (req, res) => {
         res.status(200).json({
             status: 'success',
-            data: req.body.file, // Retorna la URL y public_id
+            message: 'Archivo subido exitosamente',
+            data: req.body.file, // { url: '...', public_id: '...' }
         });
     }
 );

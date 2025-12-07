@@ -30,7 +30,7 @@ const protect = catchAsync(async (req, res, next) => {
   next();
 });
 
-const restrictTo = (...roles) => catchAsync((req, res, next) => {
+const restrictTo = (...roles) => catchAsync(async (req, res, next) => {
   if (!roles.includes(req.user.role)) {
     throw new AppError('No tienes permiso para esta acción', 403);
   }

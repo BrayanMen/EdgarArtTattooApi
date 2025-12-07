@@ -1,13 +1,35 @@
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
+// const mongoSanitize = require('express-mongo-sanitize'); // ❌ ELIMINADO por incompatibilidad
 const hpp = require('hpp');
 const { env } = require('../Config/env');
 
 const allowedOrigins = env.CLIENT_URLS
     ? env.CLIENT_URLS.split(',').map(url => url.trim())
     : [env.CLIENT_URL];
+
+// ✅ NUEVO: Sanitizador Custom (Express 5 Friendly)
+// Limpia recursivamente las llaves que empiezan con '$' o contienen '.'
+const noSqlSanitizer = () => (req, res, next) => {
+    const sanitize = (obj) => {
+        if (!obj || typeof obj !== 'object') return;
+
+        for (const key in obj) {
+            if (key.startsWith('$') || key.includes('.')) {
+                delete obj[key]; // Borramos la clave peligrosa in-place
+            } else {
+                sanitize(obj[key]); // Recursividad para objetos anidados
+            }
+        }
+    };
+
+    sanitize(req.body);
+    sanitize(req.params);
+    sanitize(req.query); // Modificamos las propiedades internas sin reasignar req.query
+
+    next();
+};
 
 const securityMiddleware = [
     helmet({
@@ -31,7 +53,7 @@ const securityMiddleware = [
         max: 500,
         message: 'Demasiadas solicitudes desde esta IP',
     }),
-    mongoSanitize(),
+    noSqlSanitizer(), // ✅ Usamos nuestra función segura
     hpp(),
     cors({
         origin: (origin, callback) => {           

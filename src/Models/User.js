@@ -21,7 +21,7 @@ const UserSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ['user', 'admin', 'artist'],
+            enum: ['client', 'admin', 'artist'],
             default: 'user',
         },
 
@@ -46,30 +46,47 @@ const UserSchema = new mongoose.Schema(
     commonSchemaOptions
 );
 
-// Middleware para hashear password
-UserSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
+// ✅ 1. Middleware 'save': Hash de contraseña + Actualizar timestamp
+UserSchema.pre('save', async function () {
+    if (!this.isModified('password')) return;
+    
     this.password = await bcrypt.hash(this.password, 12);
-    next();
+    
+    // Si no es un usuario nuevo, actualizamos la fecha de cambio de contraseña
+    // Restamos 1 segundo para asegurar que el token creado justo después sea válido
+    if (!this.isNew) {
+        this.passwordChangedAt = Date.now() - 1000;
+    }
 });
 
+// ✅ 2. Método de Instancia: Verificar Contraseña
 UserSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Hook: Se ejecuta antes de que un documento sea borrado de la DB
-UserSchema.pre('findOneAndDelete', async function (next) {
-    // Obtenemos el documento que se va a borrar
+// ✅ 3. Método de Instancia: Verificar si la contraseña cambió después del Token (EL QUE FALTABA)
+UserSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+    if (this.passwordChangedAt) {
+        const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+        
+        // Si el momento en que se cambió la contraseña es > momento en que se emitió el token
+        // Significa que el token es viejo y debe ser inválido.
+        return JWTTimestamp < changedTimestamp;
+    }
+    
+    // False significa que NO ha cambiado
+    return false;
+};
+
+// ✅ 4. Hook 'findOneAndDelete': Limpieza de Cloudinary
+UserSchema.pre('findOneAndDelete', async function () {
     const doc = await this.model.findOne(this.getQuery());
 
-    // Si tiene imagen y public_id, la borramos de Cloudinary
     if (doc && doc.image && doc.image.public_id) {
         await deleteFromCloudinary(doc.image.public_id).catch(err => {
             console.error('Error borrando imagen de usuario:', err);
-            // No detenemos el proceso, solo logueamos el error
         });
     }
-    next();
 });
 
 const User = mongoose.model('User', UserSchema);
