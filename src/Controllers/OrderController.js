@@ -32,8 +32,8 @@ exports.createOrder = catchAsync(async (req, res, next) => {
         }
 
         // B. Validar Stock / Cupos
-        if (itemModel === 'Products' && productDB.inventory.isTracked) {
-            if (productDB.inventory.stock < item.quantity) {
+        if (itemModel === 'Products' && productDB.inventory?.isTracked) {
+            if (productDB.inventory?.stock < item.quantity) {
                 return next(new AppError(`Stock insuficiente para ${productDB.name}.`, 400));
             }
         } else if (itemModel === 'Seminar') {

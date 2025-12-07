@@ -1,29 +1,35 @@
 const mongoose = require('mongoose');
 const { commonSchemaOptions } = require('../Utils/mongooseUtils');
 
-const topTattooSchema = new mongoose.Schema({
-    // Objeto de imagen estandarizado para Cloudinary
-    image: {
-        url: { type: String, required: [true, 'La imagen es requerida'] },
-        public_id: { type: String, required: true },
-        format: String
+const topTattooSchema = new mongoose.Schema(
+    {
+        // Objeto de imagen estandarizado para Cloudinary
+        image: {
+            url: { type: String, required: [true, 'La imagen es requerida'] },
+            public_id: { type: String, required: true },
+            format: String,
+        },
+
+        order: {
+            type: Number,
+            unique: true,
+            min: [1, 'El orden mínimo es 1'],
+            max: [6, 'El orden máximo es 6'],
+            required: [true, 'El orden es requerido'],
+        },
+
+        active: { type: Boolean, default: true },
     },
-    
-    order: {
-        type: Number,
-        unique: true,
-        min: [1, 'El orden mínimo es 1'],
-        max: [6, 'El orden máximo es 6'],
-        required: [true, 'El orden es requerido'],
-    },
-    
-    active: { type: Boolean, default: true }
-}, commonSchemaOptions);
+    commonSchemaOptions
+);
 
 // Middleware: Validación estricta de límite (Regla de Negocio)
-topTattooSchema.pre("save", async function (next) {
-    if (this.isNew || this.isModified("active")) {
-        const activeCount = await mongoose.models.TopTattoo.countDocuments({ active: true });
+topTattooSchema.pre('save', async function (next) {
+    if (this.isNew || this.isModified('active')) {
+        const activeCount = await mongoose.models.TopTattoo.countDocuments({
+            active: true,
+            _id: { $ne: this._id },
+        });
         // Si ya hay 6 y estamos intentando activar uno nuevo...
         if (this.active && activeCount >= 6) {
             return next(new Error('Límite alcanzado: Solo se permiten 6 tatuajes en el Top.'));
@@ -41,7 +47,7 @@ topTattooSchema.post('findOneAndDelete', async function (doc) {
             remaining[i].order = i + 1;
             await remaining[i].save();
         }
-    }    
+    }
 });
 
 const TopTattoo = mongoose.model('TopTattoo', topTattooSchema);

@@ -22,7 +22,7 @@ const UserSchema = new mongoose.Schema(
         role: {
             type: String,
             enum: ['client', 'admin', 'artist'],
-            default: 'user',
+            default: 'client',
         },
 
         // Autenticación Social
@@ -38,6 +38,7 @@ const UserSchema = new mongoose.Schema(
             public_id: String,
         },
 
+        passwordChangedAt: Date,
         emailVerified: { type: Boolean, default: false },
         emailVerificationToken: String,
         passwordResetToken: String,
@@ -49,9 +50,9 @@ const UserSchema = new mongoose.Schema(
 // ✅ 1. Middleware 'save': Hash de contraseña + Actualizar timestamp
 UserSchema.pre('save', async function () {
     if (!this.isModified('password')) return;
-    
+
     this.password = await bcrypt.hash(this.password, 12);
-    
+
     // Si no es un usuario nuevo, actualizamos la fecha de cambio de contraseña
     // Restamos 1 segundo para asegurar que el token creado justo después sea válido
     if (!this.isNew) {
@@ -68,12 +69,12 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
 UserSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
     if (this.passwordChangedAt) {
         const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
-        
+
         // Si el momento en que se cambió la contraseña es > momento en que se emitió el token
         // Significa que el token es viejo y debe ser inválido.
         return JWTTimestamp < changedTimestamp;
     }
-    
+
     // False significa que NO ha cambiado
     return false;
 };
