@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require('../Controllers/UserController');
 const { protect, restrictTo } = require('../Middleware/authMiddleware');
 const { uploadMedia, processMedia } = require('../Middleware/uploadMiddleware');
+// const { authLimiter } = require('../Middleware/securityMiddleware');
 
 // --- 1. Autenticación Pública ---
 router.post('/signup', userController.signup);

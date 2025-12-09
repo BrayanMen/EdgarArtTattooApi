@@ -39,14 +39,17 @@ exports.createOrder = catchAsync(async (req, res, next) => {
         } else if (itemModel === 'Seminar') {
             // Lógica para seminarios (cupos)
             if (productDB.capacity.max - productDB.capacity.current < item.quantity) {
-                return next(new AppError(`Cupos agotados para el seminario ${productDB.title}.`, 400));
+                return next(
+                    new AppError(`Cupos agotados para el seminario ${productDB.title}.`, 400)
+                );
             }
         }
 
         // C. Calcular precio real
-        const price = itemModel === 'Products' 
-            ? (productDB.pricing.salePrice || productDB.pricing.basePrice)
-            : (productDB.pricing.discountPrice || productDB.pricing.amount);
+        const price =
+            itemModel === 'Products'
+                ? productDB.pricing.salePrice || productDB.pricing.basePrice
+                : productDB.pricing.discountPrice || productDB.pricing.amount;
 
         // D. Agregar al array final de la orden
         orderItems.push({
@@ -54,7 +57,7 @@ exports.createOrder = catchAsync(async (req, res, next) => {
             itemModel: itemModel,
             quantity: item.quantity,
             priceAtPurchase: price, // SNAPSHOT: Precio congelado
-            nameSnapshot: productDB.name || productDB.title
+            nameSnapshot: productDB.name || productDB.title,
         });
 
         totalAmount += price * item.quantity;
@@ -68,8 +71,8 @@ exports.createOrder = catchAsync(async (req, res, next) => {
         shippingAddress,
         paymentInfo: {
             provider: paymentMethod || 'manual',
-            status: 'pending'
-        }
+            status: 'pending',
+        },
     });
 
     // AQUÍ: Integración futura con Stripe/MercadoPago para generar el link de pago
@@ -77,56 +80,79 @@ exports.createOrder = catchAsync(async (req, res, next) => {
 
     res.status(201).json({
         status: 'success',
-        data: { order: newOrder }
+        data: { order: newOrder },
     });
 });
 
 // 2. Webhook de Pago (Cuando MercadoPago avisa que pagaron)
 exports.webhookPayment = catchAsync(async (req, res, next) => {
-    // Supongamos que recibimos el ID de la orden y el estado 'approved'
-    const { orderId, status } = req.body; // Esto depende de la pasarela
+    const { orderId, status } = req.body;
 
     if (status === 'approved') {
-        const order = await Order.findById(orderId);
-        if (!order) return next(new AppError('Orden no encontrada', 404));
+        // 1. Iniciamos sesión
+        const session = await mongoose.startSession();
+        session.startTransaction();
 
-        // ACTUALIZAR STOCK (Solo cuando el pago es exitoso)
-        for (const entry of order.items) {
-            if (entry.itemModel === 'Products') {
-                await Product.findByIdAndUpdate(entry.item, {
-                    $inc: { 
-                        'inventory.stock': -entry.quantity, 
-                        'salesCount': entry.quantity 
-                    }
-                });
-            } else if (entry.itemModel === 'Seminar') {
-                await Seminar.findByIdAndUpdate(entry.item, {
-                    $inc: { 'capacity.current': entry.quantity }
-                });
+        try {
+            const order = await Order.findById(orderId).session(session);
+            if (!order) {
+                await session.abortTransaction();
+                return next(new AppError('Orden no encontrada', 404));
             }
+
+            // 2. Operaciones atómicas
+            for (const entry of order.items) {
+                if (entry.itemModel === 'Products') {
+                    await Product.findByIdAndUpdate(
+                        entry.item,
+                        {
+                            $inc: {
+                                'inventory.stock': -entry.quantity,
+                                salesCount: entry.quantity,
+                            },
+                        },
+                        { session }
+                    ); // IMPORTANTE: Pasar la sesión
+                } else if (entry.itemModel === 'Seminar') {
+                    await Seminar.findByIdAndUpdate(
+                        entry.item,
+                        {
+                            $inc: { 'capacity.current': entry.quantity },
+                        },
+                        { session }
+                    );
+                }
+            }
+
+            order.status = 'paid';
+            order.paymentInfo.status = 'approved';
+            await order.save({ session });
+
+            // 3. Confirmar todo junto
+            await session.commitTransaction();
+        } catch (error) {
+            // 4. Si algo falla, deshacer todo (Rollback)
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            session.endSession();
         }
-
-        order.status = 'paid';
-        order.paymentInfo.status = 'approved';
-        await order.save();
     }
-
     res.status(200).send('OK');
 });
-
 // 3. Mis Órdenes (Historial del Cliente)
 exports.getMyOrders = catchAsync(async (req, res, next) => {
     const orders = await Order.find({ buyer: req.user.id })
         .populate({
             path: 'items.item',
-            select: 'name title images coverImage' // Solo traemos info visual básica
+            select: 'name title images coverImage', // Solo traemos info visual básica
         })
         .sort('-createdAt');
 
     res.status(200).json({
         status: 'success',
         results: orders.length,
-        data: { orders }
+        data: { orders },
     });
 });
 

@@ -1,0 +1,221 @@
+@url = http://localhost:3001
+# Variable para almacenar el token automáticamente tras el login
+@authToken = {{login.response.body.token}}
+
+# ==========================================
+# 1. AUTENTICACIÓN Y USUARIOS
+# ==========================================
+
+### 1.1 Registrar Usuario Admin (Para poder crear productos/proyectos)
+# NOTA: Después de esto, ve a Mongo y cambia el role a "admin" manualmente
+POST {{url}}/users/signup
+Content-Type: application/json
+
+{
+    "fullName": "Edgar Admin",
+    "email": "admin@edgarart.com",
+    "password": "passwordSeguro123"
+}
+
+### 1.2 Iniciar Sesión (Captura el Token)
+# @name login
+POST {{url}}/users/login
+Content-Type: application/json
+
+{
+   "email": "admin@test.com", "password": "Password123"}
+
+### 1.3 Ver Mi Perfil (Prueba de Token)
+GET {{url}}/users/profile
+Authorization: Bearer {{authToken}}
+
+# ==========================================
+# 2. PRODUCTOS (E-COMMERCE)
+# ==========================================
+
+### 2.1 Crear Producto (Admin)
+POST {{url}}/products
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "name": "Pomada Aftercare Premium",
+    "category": "Cuidado",
+    "description": {
+        "short": "Cura tu tatuaje en tiempo récord.",
+        "full": "Fórmula vegana con vitaminas A y D."
+    },
+    "pricing": {
+        "basePrice": 35000,
+        "salePrice": 30000
+    },
+    "inventory": {
+        "stock": 50,
+        "isTracked": true
+    },
+    "images": [
+        { "url": "https://via.placeholder.com/300", "public_id": "demo_prod_1" }
+    ]
+}
+
+### 2.2 Obtener Todos los Productos (Público)
+GET {{url}}/products
+
+### 2.3 Obtener por Slug (SEO)
+GET {{url}}/products/slug/pomada-aftercare-premium
+
+# ==========================================
+# 3. PROYECTOS (PORTAFOLIO)
+# ==========================================
+
+### 3.1 Crear Proyecto (Admin)
+POST {{url}}/projects
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "title": "Samurai Espalda Completa",
+    "mainImage": { "url": "https://via.placeholder.com/800", "public_id": "demo_proj_1" },
+    "media": [
+        { "type": "image", "url": "https://via.placeholder.com/800", "public_id": "demo_proj_2" }
+    ],
+    "description": {
+        "client": "Carlos M.",
+        "techniques": ["Realismo", "Black & Gray"],
+        "bodyPart": "Espalda",
+        "story": "Un proyecto de 40 horas representando el honor...",
+        "duration": { "sessions": 5, "hoursTotal": 40 }
+    }
+}
+
+### 3.2 Ver Proyecto por Slug (SEO)
+GET {{url}}/projects/slug/samurai-espalda-completa
+
+### 3.3 Registrar Visita (Analytics)
+PATCH {{url}}/projects/slug/samurai-espalda-completa/view
+
+# ==========================================
+# 4. GALERÍA (3D / PARALLAX)
+# ==========================================
+
+### 4.1 Ver Galería (Público)
+GET {{url}}/gallery
+
+### 4.2 Crear Item Galería (Requiere Multipart)
+# NOTA: Para probar subida de archivos real, usa Postman o crea un form HTML.
+# REST Client soporta multipart pero necesitas la ruta absoluta del archivo en tu PC.
+# Aquí simulo la petición pero fallará sin el archivo real.
+
+# POST {{url}}/gallery
+# Authorization: Bearer {{authToken}}
+# Content-Type: multipart/form-data; boundary=MyBoundary
+# 
+# --MyBoundary
+# Content-Disposition: form-data; name="title"
+# 
+# Diseño 3D Cráneo
+# --MyBoundary
+# Content-Disposition: form-data; name="type"
+# 
+# 3D Model
+# --MyBoundary
+# Content-Disposition: form-data; name="mainImage"; filename="craneo.glb"
+# Content-Type: model/gltf-binary
+# 
+# < ./ruta/a/tu/archivo/craneo.glb
+# --MyBoundary--
+
+# ==========================================
+# 5. SEMINARIOS (EVENTOS)
+# ==========================================
+
+### 5.1 Crear Seminario (Admin)
+POST {{url}}/seminars
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "title": "Masterclass Realismo Sombra",
+    "description": "Aprende las técnicas avanzadas...",
+    "modality": "Presencial",
+    "dates": {
+        "start": "2024-12-01T10:00:00.000Z",
+        "end": "2024-12-01T18:00:00.000Z"
+    },
+    "pricing": {
+        "amount": 150000
+    },
+    "capacity": {
+        "max": 15
+    },
+    "coverImage": { "url": "https://via.placeholder.com/500", "public_id": "sem_1" }
+}
+
+### 5.2 Ver Seminarios Activos
+GET {{url}}/seminars/active
+
+# ==========================================
+# 6. ÓRDENES (COMPRAS)
+# ==========================================
+
+### 6.1 Crear Orden (Checkout)
+# Asegúrate de reemplazar el ID con uno real que hayas creado en el paso 2.1
+POST {{url}}/orders
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "items": [
+        { 
+            "id": "REEMPLAZA_CON_ID_PRODUCTO_REAL", 
+            "type": "Product", 
+            "quantity": 2 
+        }
+    ],
+    "shippingAddress": {
+        "street": "Calle Falsa 123",
+        "city": "Bogotá",
+        "country": "Colombia"
+    },
+    "paymentMethod": "manual"
+}
+
+### 6.2 Ver Mis Órdenes
+GET {{url}}/orders/my-orders
+Authorization: Bearer {{authToken}}
+
+# ==========================================
+# 7. CITAS (APPOINTMENTS)
+# ==========================================
+
+### 7.1 Solicitar Cita (Cliente)
+POST {{url}}/appointments/request
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "description": "Quiero un tatuaje de un león geométrico.",
+    "bodyPart": "Antebrazo Izquierdo",
+    "size": "15cm x 10cm"
+}
+
+### 7.2 Ver Citas (Admin)
+GET {{url}}/appointments
+Authorization: Bearer {{authToken}}
+
+# ==========================================
+# 8. TOP TATTOOS (HOME)
+# ==========================================
+
+### 8.1 Ver Top
+GET {{url}}/top-tattoos
+
+### 8.2 Agregar al Top (Admin)
+POST {{url}}/top-tattoos
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "image": { "url": "https://via.placeholder.com/400", "public_id": "top_1" },
+    "order": 1
+}

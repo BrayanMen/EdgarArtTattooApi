@@ -46,10 +46,10 @@ const projectsSchema = new mongoose.Schema({
 }, commonSchemaOptions);
 
 // Middleware Pre-Save: Generar Slug Automáticamente
-projectsSchema.pre('save', function(next) {
-    if (!this.isModified('title')) return next();
+projectsSchema.pre('save', function() {
+    if (!this.isModified('title')) return ;
     this.slug = slugify(this.title);
-    next();
+    ;
 });
 
 // Índice de texto para el buscador interno

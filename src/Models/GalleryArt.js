@@ -67,11 +67,11 @@ const galleryArtSchema = new mongoose.Schema({
 
 }, commonSchemaOptions);
 
-galleryArtSchema.pre('save', function(next) {
+galleryArtSchema.pre('save', function() {
     if (this.isModified('title')) {
         this.slug = slugify(this.title);
     }
-    next();
+    ;
 });
 
 const GalleryArt = mongoose.model('GalleryArt', galleryArtSchema);

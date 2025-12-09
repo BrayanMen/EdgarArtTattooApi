@@ -53,10 +53,9 @@ const orderSchema = new mongoose.Schema({
 
 }, commonSchemaOptions);
 
-// Middleware para poblar datos automáticamente en consultas
-orderSchema.pre(/^find/, function(next) {
+// Middleware para poblar datos  en consultas
+orderSchema.pre(/^find/, function() {
     this.populate('buyer', 'fullName email image');
-    next();
 });
 
 const Order = mongoose.model('Order', orderSchema);

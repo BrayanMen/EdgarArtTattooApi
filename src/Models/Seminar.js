@@ -45,11 +45,11 @@ const seminarSchema = new mongoose.Schema({
     active: { type: Boolean, default: true }
 }, commonSchemaOptions);
 
-seminarSchema.pre('save', function(next) {
+seminarSchema.pre('save', function() {
     if (this.isModified('title')) {
         this.slug = slugify(this.title);
     }
-    next();
+    
 });
 
 const Seminar = mongoose.model('Seminar', seminarSchema);

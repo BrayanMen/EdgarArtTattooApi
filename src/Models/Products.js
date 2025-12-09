@@ -39,11 +39,10 @@ const productSchema = new mongoose.Schema({
 
 }, commonSchemaOptions);
 
-productSchema.pre('save', function(next) {
+productSchema.pre('save', function() {
     if (this.isModified('name')) {
         this.slug = slugify(this.name);
     }
-    next();
 });
 
 const Products = mongoose.model('Products', productSchema);

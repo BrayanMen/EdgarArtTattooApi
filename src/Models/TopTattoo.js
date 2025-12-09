@@ -24,7 +24,7 @@ const topTattooSchema = new mongoose.Schema(
 );
 
 // Middleware: Validación estricta de límite (Regla de Negocio)
-topTattooSchema.pre('save', async function (next) {
+topTattooSchema.pre('save', async function () {
     if (this.isNew || this.isModified('active')) {
         const activeCount = await mongoose.models.TopTattoo.countDocuments({
             active: true,
@@ -35,7 +35,7 @@ topTattooSchema.pre('save', async function (next) {
             return next(new Error('Límite alcanzado: Solo se permiten 6 tatuajes en el Top.'));
         }
     }
-    next();
+    
 });
 
 // Middleware Post-Delete: Reordenamiento automático

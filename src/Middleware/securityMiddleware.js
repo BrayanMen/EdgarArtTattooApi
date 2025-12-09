@@ -70,4 +70,10 @@ const securityMiddleware = [
     }),
 ];
 
+exports.authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hora
+    max: 10, // Max 10 intentos de login erróneos por IP
+    message: 'Demasiados intentos de inicio de sesión, intenta de nuevo en una hora.'
+});
+
 module.exports = securityMiddleware;

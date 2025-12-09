@@ -6,7 +6,7 @@ const { protect, restrictTo } = require('../Middleware/authMiddleware');
 // Importar Routers
 const userRouter = require('./UserRouter');
 const reviewRouter = require('./ReviewsRouter');
-const topTattooRouter = require('./topTattooRoutes');
+const topTattooRouter = require('./TopTattooRoutes');
 const productsRouter = require('./ProductsRouter');
 const projectsRouter = require('./ProjectsRouter');
 const galleryRouter = require('./GalleryRouter');
