@@ -16,7 +16,7 @@ const noSqlSanitizer = () => (req, res, next) => {
         if (!obj || typeof obj !== 'object') return;
 
         for (const key in obj) {
-            if (key.startsWith('$') || key.includes('.')) {
+            if (key.startsWith('$')) {
                 delete obj[key]; // Borramos la clave peligrosa in-place
             } else {
                 sanitize(obj[key]); // Recursividad para objetos anidados

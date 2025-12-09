@@ -29,6 +29,59 @@ Content-Type: application/json
 GET {{url}}/users/profile
 Authorization: Bearer {{authToken}}
 
+### 1.4 Actualizar Mi Perfil
+PATCH {{url}}/users/profile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "fullName": "Edgar Master Artist",
+    "socialLinks": ["instagram.com/edgar"]
+}
+
+### 1.5 Cambiar Contraseña
+PATCH {{url}}/users/update-password
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "currentPassword": "passwordSeguro123",
+    "newPassword": "newPassword456"
+}
+
+### 1.6 Recuperar Contraseña (Forgot Password)
+POST {{url}}/users/forgot-password
+Content-Type: application/json
+
+{
+    "email": "admin@edgarart.com"
+}
+
+# --- ADMIN USERS ---
+
+### 1.7 Ver Todos los Usuarios (Admin)
+GET {{url}}/users
+Authorization: Bearer {{authToken}}
+
+### 1.8 Ver Usuario por ID (Admin)
+GET {{url}}/users/ID_USUARIO_AQUI
+Authorization: Bearer {{authToken}}
+
+### 1.9 Actualizar Usuario (Admin - Cambiar Rol/Activo)
+PATCH {{url}}/users/ID_USUARIO_AQUI
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "role": "admin",
+    "active": true
+}
+
+### 1.10 Eliminar Usuario (Admin)
+DELETE {{url}}/users/ID_USUARIO_AQUI
+Authorization: Bearer {{authToken}}
+
+
 # ==========================================
 # 2. PRODUCTOS (E-COMMERCE)
 # ==========================================
@@ -58,11 +111,32 @@ Content-Type: application/json
     ]
 }
 
-### 2.2 Obtener Todos los Productos (Público)
+### 2.2 Ver Todos los Productos (Público)
 GET {{url}}/products
 
-### 2.3 Obtener por Slug (SEO)
+### 2.3 Ver Producto por Slug (SEO)
 GET {{url}}/products/slug/pomada-aftercare-premium
+
+### 2.4 Ver Producto por ID
+GET {{url}}/products/69379b04739e0c566b0e0cdc
+
+### 2.5 Actualizar Producto (Admin)
+PATCH {{url}}/products/69379b04739e0c566b0e0cdc
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "pricing": { "basePrice": 40000 }
+}
+
+### 2.6 Eliminar Producto (Admin)
+DELETE {{url}}/products/693794451796e781b3123f6b
+Authorization: Bearer {{authToken}}
+
+### 2.7 Sincronizar con MercadoLibre (Admin)
+POST {{url}}/products/sync-ml/69379b04739e0c566b0e0cdc
+Authorization: Bearer {{authToken}}
+
 
 # ==========================================
 # 3. PROYECTOS (PORTAFOLIO)
@@ -83,47 +157,74 @@ Content-Type: application/json
         "client": "Carlos M.",
         "techniques": ["Realismo", "Black & Gray"],
         "bodyPart": "Espalda",
-        "story": "Un proyecto de 40 horas representando el honor...",
+        "story": "Un proyecto de 40 horas...",
         "duration": { "sessions": 5, "hoursTotal": 40 }
     }
 }
 
-### 3.2 Ver Proyecto por Slug (SEO)
+### 3.2 Ver Todos los Proyectos
+GET {{url}}/projects
+
+### 3.3 Ver Proyecto por Slug (SEO)
 GET {{url}}/projects/slug/samurai-espalda-completa
 
-### 3.3 Registrar Visita (Analytics)
+### 3.4 Registrar Visita (Analytics)
 PATCH {{url}}/projects/slug/samurai-espalda-completa/view
+
+### 3.5 Actualizar Proyecto (Admin)
+PATCH {{url}}/projects/69379d9d739e0c566b0e0d0c
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "description.client": "Carlos Modificado"
+}
+
+### 3.6 Eliminar Proyecto (Admin)
+DELETE {{url}}/projects/69379d9d739e0c566b0e0d0c
+Authorization: Bearer {{authToken}}
+
 
 # ==========================================
 # 4. GALERÍA (3D / PARALLAX)
 # ==========================================
 
-### 4.1 Ver Galería (Público)
+### 4.1 Ver Galería Completa
 GET {{url}}/gallery
 
-### 4.2 Crear Item Galería (Requiere Multipart)
-# NOTA: Para probar subida de archivos real, usa Postman o crea un form HTML.
-# REST Client soporta multipart pero necesitas la ruta absoluta del archivo en tu PC.
-# Aquí simulo la petición pero fallará sin el archivo real.
+### 4.2 Ver Top 5 (Home)
+GET {{url}}/gallery/top-5
 
+### 4.3 Filtrar por Tipo
+GET {{url}}/gallery/type/3D Model
+
+### 4.4 Crear Item Galería (Multipart - Simulado)
+# NOTA: REST Client necesita rutas de archivo reales para funcionar.
 # POST {{url}}/gallery
 # Authorization: Bearer {{authToken}}
-# Content-Type: multipart/form-data; boundary=MyBoundary
-# 
-# --MyBoundary
+# Content-Type: multipart/form-data; boundary=boundary
+# --boundary
 # Content-Disposition: form-data; name="title"
-# 
-# Diseño 3D Cráneo
-# --MyBoundary
-# Content-Disposition: form-data; name="type"
-# 
-# 3D Model
-# --MyBoundary
-# Content-Disposition: form-data; name="mainImage"; filename="craneo.glb"
-# Content-Type: model/gltf-binary
-# 
-# < ./ruta/a/tu/archivo/craneo.glb
-# --MyBoundary--
+# Obra Maestra
+# --boundary
+# Content-Disposition: form-data; name="mainImage"; filename="img.jpg"
+# Content-Type: image/jpeg
+# < ./ruta/a/imagen.jpg
+# --boundary--
+
+### 4.5 Actualizar Item Galería (Admin)
+PATCH {{url}}/gallery/ID_ITEM_AQUI
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "title": "Nuevo Título"
+}
+
+### 4.6 Eliminar Item Galería (Admin)
+DELETE {{url}}/gallery/ID_ITEM_AQUI
+Authorization: Bearer {{authToken}}
+
 
 # ==========================================
 # 5. SEMINARIOS (EVENTOS)
@@ -135,45 +236,53 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-    "title": "Masterclass Realismo Sombra",
-    "description": "Aprende las técnicas avanzadas...",
+    "title": "Masterclass Realismo",
+    "description": "Aprende técnicas avanzadas.",
     "modality": "Presencial",
     "dates": {
         "start": "2024-12-01T10:00:00.000Z",
         "end": "2024-12-01T18:00:00.000Z"
     },
-    "pricing": {
-        "amount": 150000
-    },
-    "capacity": {
-        "max": 15
-    },
+    "pricing": { "amount": 150000 },
+    "capacity": { "max": 15 },
     "coverImage": { "url": "https://via.placeholder.com/500", "public_id": "sem_1" }
 }
 
-### 5.2 Ver Seminarios Activos
+### 5.2 Ver Seminarios Activos (Público)
 GET {{url}}/seminars/active
 
+### 5.3 Ver Todos los Seminarios (Público)
+GET {{url}}/seminars
+
+### 5.4 Actualizar Seminario (Admin)
+PATCH {{url}}/seminars/6937954c739e0c566b0e0cad
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "capacity.max": 20 
+}
+
+### 5.5 Eliminar Seminario (Admin)
+DELETE {{url}}/seminars/ID_SEMINARIO_AQUI
+Authorization: Bearer {{authToken}}
+
+
 # ==========================================
-# 6. ÓRDENES (COMPRAS)
+# 6. ÓRDENES (VENTAS)
 # ==========================================
 
 ### 6.1 Crear Orden (Checkout)
-# Asegúrate de reemplazar el ID con uno real que hayas creado en el paso 2.1
 POST {{url}}/orders
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
     "items": [
-        { 
-            "id": "REEMPLAZA_CON_ID_PRODUCTO_REAL", 
-            "type": "Product", 
-            "quantity": 2 
-        }
+        { "id": "ID_PRODUCTO_REAL", "type": "Product", "quantity": 1 }
     ],
     "shippingAddress": {
-        "street": "Calle Falsa 123",
+        "street": "Calle 123",
         "city": "Bogotá",
         "country": "Colombia"
     },
@@ -183,6 +292,29 @@ Content-Type: application/json
 ### 6.2 Ver Mis Órdenes
 GET {{url}}/orders/my-orders
 Authorization: Bearer {{authToken}}
+
+### 6.3 Webhook de Pago (Simulación Pasarela)
+POST {{url}}/orders/webhook
+Content-Type: application/json
+
+{
+    "orderId": "ID_ORDEN_PENDIENTE",
+    "status": "approved"
+}
+
+### 6.4 Ver Todas las Órdenes (Admin)
+GET {{url}}/orders
+Authorization: Bearer {{authToken}}
+
+### 6.5 Actualizar Estado Orden (Admin)
+PATCH {{url}}/orders/69379a29739e0c566b0e0cc6
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "status": "shipped"
+}
+
 
 # ==========================================
 # 7. CITAS (APPOINTMENTS)
@@ -194,20 +326,50 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-    "description": "Quiero un tatuaje de un león geométrico.",
-    "bodyPart": "Antebrazo Izquierdo",
-    "size": "15cm x 10cm"
+    "description": "Quiero un tatuaje de león.",
+    "bodyPart": "Antebrazo",
+    "size": "15cm"
 }
 
-### 7.2 Ver Citas (Admin)
+### 7.2 Ver Mis Citas (Cliente)
+GET {{url}}/appointments/my-appointments
+Authorization: Bearer {{authToken}}
+
+### 7.3 Ver Todas las Citas (Admin)
 GET {{url}}/appointments
 Authorization: Bearer {{authToken}}
+
+### 7.4 Cotizar Cita (Admin - Responder)
+PATCH {{url}}/appointments/6937957c739e0c566b0e0cb2/quote
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "price": 500000,
+    "estimatedSessions": 2,
+    "depositAmount": 100000,
+    "adminNotes": "Cliente piel sensible"
+}
+
+### 7.5 Agendar Cita (Admin - Confirmar fecha)
+PATCH {{url}}/appointments/6937957c739e0c566b0e0cb2/schedule
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "date": "2024-11-20T14:00:00.000Z"
+}
+
+### 7.6 Eliminar Cita (Admin)
+DELETE {{url}}/appointments/ID_CITA_AQUI
+Authorization: Bearer {{authToken}}
+
 
 # ==========================================
 # 8. TOP TATTOOS (HOME)
 # ==========================================
 
-### 8.1 Ver Top
+### 8.1 Ver Top Tattoos (Público)
 GET {{url}}/top-tattoos
 
 ### 8.2 Agregar al Top (Admin)
@@ -219,3 +381,72 @@ Content-Type: application/json
     "image": { "url": "https://via.placeholder.com/400", "public_id": "top_1" },
     "order": 1
 }
+
+### 8.3 Reordenar (Admin - Drag & Drop)
+PATCH {{url}}/top-tattoos/reorder
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+[
+    { "_id": "ID_IMAGEN_1", "order": 2 },
+    { "_id": "ID_IMAGEN_2", "order": 1 }
+]
+
+### 8.4 Activar/Desactivar Imagen (Admin)
+PATCH {{url}}/top-tattoos/ID_TOP_AQUI
+Authorization: Bearer {{authToken}}
+
+### 8.5 Eliminar del Top (Admin)
+DELETE {{url}}/top-tattoos/ID_TOP_AQUI
+Authorization: Bearer {{authToken}}
+
+
+# ==========================================
+# 9. REVIEWS (COMENTARIOS)
+# ==========================================
+
+### 9.1 Ver Reviews de un Proyecto/Producto
+GET {{url}}/reviews/target/ID_TARGET_AQUI
+
+### 9.2 Crear Review (Cliente)
+POST {{url}}/reviews
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "target": "ID_TARGET_AQUI",
+    "targetModel": "Projects",
+    "rating": 5,
+    "comment": "Increíble trabajo, muy profesional."
+}
+
+### 9.3 Editar Mi Review
+PATCH {{url}}/reviews/ID_REVIEW_AQUI
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "rating": 4,
+    "comment": "Muy bueno, aunque dolió un poco."
+}
+
+### 9.4 Ver Estadísticas Reviews (Admin)
+GET {{url}}/reviews/admin/stats
+Authorization: Bearer {{authToken}}
+
+### 9.5 Eliminar Review (Admin - Moderación)
+DELETE {{url}}/reviews/admin/ID_REVIEW_AQUI
+Authorization: Bearer {{authToken}}
+
+
+# ==========================================
+# 10. UTILIDADES
+# ==========================================
+
+### 10.1 Health Check
+GET {{url}}/health
+
+### 10.2 Subida Global (Admin - Multipart Simulado)
+# POST {{url}}/upload-global
+# Authorization: Bearer {{authToken}}
+# ... (requiere form-data)
