@@ -125,9 +125,14 @@ exports.webhookPayment = catchAsync(async (req, res, next) => {
                 }
             }
 
-            order.status = 'paid';
-            order.paymentInfo.status = 'approved';
-            await order.save({ session });
+            await Order.updateOne(
+                { _id: order._id },
+                {
+                    status: 'paid',
+                    'paymentInfo.status': 'approved',
+                },
+                { session }
+            );
 
             // 3. Confirmar todo junto
             await session.commitTransaction();

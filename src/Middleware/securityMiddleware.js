@@ -5,9 +5,10 @@ const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const { env } = require('../Config/env');
 
-const allowedOrigins = env.CLIENT_URLS
-    ? env.CLIENT_URLS.split(',').map(url => url.trim())
-    : [env.CLIENT_URL];
+const allowedOrigins = [
+    env.CLIENT_URL,
+    ...(env.CLIENT_URLS ? env.CLIENT_URLS.split(',').map(url => url.trim()) : [])
+];
 
 // ✅ NUEVO: Sanitizador Custom (Express 5 Friendly)
 // Limpia recursivamente las llaves que empiezan con '$' o contienen '.'

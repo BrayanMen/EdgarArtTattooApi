@@ -74,7 +74,6 @@ const processMedia = fieldName =>
     catchAsync(async (req, res, next) => {
         if (!req.file) return next();
 
-        // CORRECCIÓN: Usar req.file en lugar de file
         const resourceType = getResourceType(req.file.mimetype, req.file.originalname);
         let finalBuffer = req.file.buffer;
 
