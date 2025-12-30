@@ -108,7 +108,7 @@ const checkExistingReview = async (userId, targetId, targetModel) => {
     return next(new AppError('No se encontró la review o no tienes permiso para eliminarla', 404));
   }
 
-  await review.remove();
+  await review.deleteOne();
 
   res.status(204).json({
     status: 'success',

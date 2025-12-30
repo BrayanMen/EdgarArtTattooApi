@@ -28,6 +28,10 @@ exports.syncWithMercadoLibre = catchAsync(async (req, res, next) => {
 
     if (!product) return next(new AppError('Producto no encontrado', 404));
 
+    if (!product.name || !product.pricing.basePrice || product.images.length === 0) {
+    return next(new AppError('Faltan datos obligatorios para ML', 400));
+}
+
     // Validamos que tengamos API Key
     if (!process.env.MERCADOLIBRE_API_KEY) {
         return next(new AppError('API Key de MercadoLibre no configurada', 500));

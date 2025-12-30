@@ -45,5 +45,8 @@ const appointmentSchema = new mongoose.Schema({
 
 }, commonSchemaOptions);
 
+appointmentSchema.index({ client: 1, status: 1 });
+appointmentSchema.index({ status: 1, scheduledDate: 1 });
+
 const Appointment = mongoose.model('Appointment', appointmentSchema);
 module.exports = Appointment;

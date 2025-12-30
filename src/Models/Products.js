@@ -45,5 +45,8 @@ productSchema.pre('save', function() {
     }
 });
 
+productSchema.index({ name: 'text', 'description.full': 'text' });
+productSchema.index({ category: 1, salesCount: -1 });
+
 const Products = mongoose.model('Products', productSchema);
 module.exports = Products;

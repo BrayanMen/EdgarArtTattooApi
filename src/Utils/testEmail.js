@@ -1,4 +1,5 @@
 const {testEmail} = require('../Config/nodemailer');
+const { logger } = require('./logger');
 
 const runEmailTest = async () => {
     try {

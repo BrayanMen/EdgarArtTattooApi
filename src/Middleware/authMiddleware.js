@@ -19,7 +19,7 @@ const protect = catchAsync(async (req, res, next) => {
   const user = await User.findById(decoded.id);
 
   if (!user) {
-    return next(new AppError('La usuario que pertenece a este token ya no existe.', 401));
+    return next(new AppError('El usuario que pertenece a este token ya no existe.', 401));
   }
 
   if (user.changedPasswordAfter(decoded.iat)) {
